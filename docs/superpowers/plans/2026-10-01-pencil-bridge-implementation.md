@@ -227,65 +227,79 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 PASS=0; FAIL=0
-check_case() { # $1=描述 $2=期望退出码(0/1) $3=skills 目录
-  local desc="$1" want="$2" dir="$3" got
-  PENCIL_BRIDGE_SKILLS_DIR="$dir" bash "$REPO_ROOT/bin/check" >/dev/null 2>&1
-  got=$?
-  if [ "$got" -eq "$want" ]; then
-    echo "  ok:   $desc"; PASS=$((PASS+1))
-  else
-    echo "  FAIL: $desc (期望退出码 $want，实得 $got)"; FAIL=$((FAIL+1))
+
+# $1=描述 $2=期望退出码 $3=skills 目录 $4=期望输出中出现的子串（可空）
+check_case() {
+  local desc="$1" want="$2" dir="$3" needle="${4:-}" got out
+  out="$(PENCIL_BRIDGE_SKILLS_DIR="$dir" bash "$REPO_ROOT/bin/check" 2>&1)"; got=$?
+  if [ "$got" -ne "$want" ]; then
+    echo "  FAIL: $desc（期望退出码 $want，实得 $got）"; FAIL=$((FAIL+1)); return
   fi
+  if [ -n "$needle" ] && ! printf '%s\n' "$out" | grep -qF -- "$needle"; then
+    echo "  FAIL: $desc（退出码正确，但输出未含: $needle）"; FAIL=$((FAIL+1)); return
+  fi
+  echo "  ok:   $desc"; PASS=$((PASS+1))
 }
 
-mk() { # $1=目录 $2=name-frontmatter $3=额外 frontmatter 行(可空)
-  mkdir -p "$1/$2"
-  { echo "---"; echo "name: $2"; echo "description: 测试用技能。"
-    [ -n "${3:-}" ] && printf '%s\n' "$3"
-    echo "---"; echo; echo "# $2"; } > "$1/$2/SKILL.md"
+REFS="mcp-toolbox document-routing write-safety design-map assets-extraction init-and-mcp stack-flutter stack-kotlin stack-web"
+SKILLS="pencil-bridge pencil-init pencil-map pencil-sync pencil-assets"
+
+# 结构完整的最小技能包：5 个技能 + 9 个 reference
+mk_full() { # $1=目录
+  local dir="$1" s r
+  mkdir -p "$dir"
+  for s in $SKILLS; do
+    mkdir -p "$dir/$s"
+    { echo "---"; echo "name: $s"; echo "description: 测试用技能。"
+      echo "---"; echo; echo "# $s"; } > "$dir/$s/SKILL.md"
+  done
+  mkdir -p "$dir/pencil-bridge/references"
+  for r in $REFS; do echo "# $r" > "$dir/pencil-bridge/references/$r.md"; done
 }
 
-GOOD="$TMP/good"
-mk "$GOOD" pencil-bridge
-mkdir -p "$GOOD/pencil-bridge/references"
-for r in mcp-toolbox document-routing write-safety design-map \
-         assets-extraction init-and-mcp stack-flutter stack-kotlin stack-web; do
-  echo "# $r" > "$GOOD/pencil-bridge/references/$r.md"
-done
-check_case "结构完整时通过" 0 "$GOOD"
+# 往 frontmatter 块内插入一行
+inject_fm() { # $1=file $2=要插入的行
+  awk -v line="$2" 'NR==1{print; print line; next} {print}' "$1" > "$1.tmp" && mv "$1.tmp" "$1"
+}
 
-BAD1="$TMP/bad1"; mk "$BAD1" pencil-bridge
-check_case "缺 references 时失败" 1 "$BAD1"
+GOOD="$TMP/good"; mk_full "$GOOD"
+check_case "结构完整时通过" 0 "$GOOD" "全部通过"
 
-BAD2="$TMP/bad2"; mk "$BAD2" pencil-bridge "" "disableModelInvocation: true"
-mkdir -p "$BAD2/pencil-bridge/references"
-for r in mcp-toolbox document-routing write-safety design-map \
-         assets-extraction init-and-mcp stack-flutter stack-kotlin stack-web; do
-  echo "# $r" > "$BAD2/pencil-bridge/references/$r.md"
-done
-check_case "含 legacy 驼峰键时失败" 1 "$BAD2"
+BAD1="$TMP/bad1"; mk_full "$BAD1"
+rm -rf "$BAD1/pencil-bridge/references"
+check_case "缺 references 时失败" 1 "$BAD1" "缺 reference"
 
-BAD3="$TMP/bad3"; mk "$BAD3" pencil-map "" "allowed-tools: [Bash]"
-mkdir -p "$BAD3/pencil-bridge/references"
-for r in mcp-toolbox document-routing write-safety design-map \
-         assets-extraction init-and-mcp stack-flutter stack-kotlin stack-web; do
-  echo "# $r" > "$BAD3/pencil-bridge/references/$r.md"
-done
-check_case "含 allowed-tools 时失败" 1 "$BAD3"
+BAD2="$TMP/bad2"; mk_full "$BAD2"
+inject_fm "$BAD2/pencil-bridge/SKILL.md" "disableModelInvocation: true"
+check_case "含 legacy 驼峰键时失败" 1 "$BAD2" "legacy 键 disableModelInvocation"
 
-BAD4="$TMP/bad4"; mk "$BAD4" pencil-map
-mkdir -p "$BAD4/pencil-bridge/references"
-for r in mcp-toolbox document-routing write-safety design-map \
-         assets-extraction init-and-mcp stack-flutter stack-kotlin stack-web; do
-  echo "# $r" > "$BAD4/pencil-bridge/references/$r.md"
-done
+BAD3="$TMP/bad3"; mk_full "$BAD3"
+inject_fm "$BAD3/pencil-map/SKILL.md" "allowed-tools: [Bash]"
+check_case "含 allowed-tools 时失败" 1 "$BAD3" "使用 allowed-tools"
+
+BAD4="$TMP/bad4"; mk_full "$BAD4"
 echo '见 ../pencil-bridge/references/nonexistent.md' >> "$BAD4/pencil-map/SKILL.md"
-check_case "引用不存在的 reference 时失败" 1 "$BAD4"
+check_case "引用不存在的 reference 时失败" 1 "$BAD4" "引用了不存在的 reference"
 
 BAD5="$TMP/bad5"
 mkdir -p "$BAD5/Pencil_Map"
 printf -- '---\nname: Pencil_Map\ndescription: 名字非法。\n---\n' > "$BAD5/Pencil_Map/SKILL.md"
-check_case "name 不合 kebab-case 时失败" 1 "$BAD5"
+check_case "name 不合 kebab-case 时失败" 1 "$BAD5" "不合 kebab-case"
+
+BAD6="$TMP/bad6"; mk_full "$BAD6"
+echo '见 /Users/someone/Project/pencil-bridge/skills/x.md' >> "$BAD6/pencil-sync/SKILL.md"
+check_case "出现绝对路径时失败" 1 "$BAD6" "绝对路径"
+
+BAD7="$TMP/bad7"; mk_full "$BAD7"
+mkdir -p "$BAD7/pencil_assets"
+printf -- '---\nname: pencil-assets\ndescription: 目录名与 name 不一致。\n---\n' > "$BAD7/pencil_assets/SKILL.md"
+rm -rf "$BAD7/pencil-assets"
+check_case "目录名与 frontmatter name 不一致时失败" 1 "$BAD7" "目录名与 frontmatter name"
+
+# DSH 只读 frontmatter：正文里出现 banned 键字样不应误报
+BAD8="$TMP/bad8"; mk_full "$BAD8"
+printf '\nallowed-tools: [Bash]\n' >> "$BAD8/pencil-bridge/SKILL.md"
+check_case "正文提及 allowed-tools 不误报" 0 "$BAD8" "全部通过"
 
 echo
 echo "通过 $PASS 项，失败 $FAIL 项。"
@@ -329,6 +343,17 @@ fm_field() { # $1=file $2=key
   ' "$1"
 }
 
+# 键是否出现在 frontmatter 内。DSH 只读 frontmatter，正文提及同名键不算问题。
+fm_has_key() { # $1=file $2=key
+  awk -v key="$2" '
+    NR==1 && $0!="---" { exit 1 }
+    NR==1 { next }
+    /^---[[:space:]]*$/ { exit }
+    $0 ~ "^" key "[[:space:]]*:" { found=1; exit }
+    END { exit(found ? 0 : 1) }
+  ' "$1"
+}
+
 [ -d "$SKILLS_DIR" ] || { echo "FAIL: skills 目录不存在: $SKILLS_DIR" >&2; exit 1; }
 
 shopt -s nullglob
@@ -351,13 +376,13 @@ for dir in "$SKILLS_DIR"/*/; do
   fi
 
   for legacy in disableModelInvocation modelInvocable userInvocable; do
-    if grep -qE "^${legacy}[[:space:]]*:" "$skill_md"; then
+    if fm_has_key "$skill_md" "$legacy"; then
       fail "$name: 含 legacy 键 $legacy（DSH 会丢弃整个技能）"
     fi
   done
 
   for banned in allowed-tools argument-hint; do
-    if grep -qE "^${banned}[[:space:]]*:" "$skill_md"; then
+    if fm_has_key "$skill_md" "$banned"; then
       fail "$name: 使用 $banned（只在 Claude 生效，破坏三 harness 一致性）"
     fi
   done
@@ -486,6 +511,13 @@ rm -rf "$HOME/.claude/skills/pencil-assets"
 bash "$REPO_ROOT/bin/link" --only agents >/dev/null
 assert "--only agents 不会重建 Claude 侧" [ ! -e "$HOME/.claude/skills/pencil-assets" ]
 
+# --- 源技能缺失时直接失败，不造悬空软链 ---
+MISSING_REPO="$TMP_HOME/missing-repo"
+mkdir -p "$MISSING_REPO/bin" "$MISSING_REPO/skills/pencil-bridge"
+cp "$REPO_ROOT/bin/link" "$MISSING_REPO/bin/link"
+assert "源技能缺失时报错退出" \
+  bash -c '! bash "$1/bin/link" >/dev/null 2>&1' _ "$MISSING_REPO"
+
 echo
 echo "通过 $PASS 项，失败 $FAIL 项。"
 [ "$FAIL" -eq 0 ]
@@ -537,6 +569,11 @@ while [ $# -gt 0 ]; do
     *) echo "未知参数: $1" >&2; usage >&2; exit 2 ;;
   esac
   shift
+done
+
+# 源技能必须齐全：否则软链分支会造出悬空软链（宿主静默忽略），复制分支会中途崩掉
+for n in "${SKILL_NAMES[@]}"; do
+  [ -d "$SKILLS_SRC/$n" ] || { echo "缺源技能目录: $SKILLS_SRC/$n" >&2; exit 1; }
 done
 
 want() {
@@ -1277,6 +1314,20 @@ git commit -m "docs: spec §14 验收标准实测结果"
 - 五个技能名 `pencil-bridge` / `pencil-init` / `pencil-map` / `pencil-sync` / `pencil-assets` 在 `bin/link`、`bin/check`、测试、File Structure 中**完全一致**。
 - 9 个 reference 文件名在 `bin/check` 的 `REFS` 数组、File Structure、Task 5 的 Resources 列表、Task 6–12 中**完全一致**。
 - 相对路径形态统一为 `../pencil-bridge/references/<file>.md`（`bin/check` 的正则即按此写）。
+
+**4. Script executability verification** —— 把计划里两个脚本与两套测试**逐字提取到 `/tmp` 实跑**（不是纸面审查），抓到并修掉三处真缺陷：
+
+| # | 缺陷 | 后果 | 修法 |
+|---|---|---|---|
+| 1 | `tests/check.test.sh` 的 `mk()` 只接受 3 个参数，`BAD2`/`BAD3` 却传了 4 个 | legacy 键与 `allowed-tools` **从未被注入**，用例名不副实 | 重写为 `mk_full()` 造完整基线（5 技能 + 9 reference）+ `inject_fm()` 定点注入 |
+| 2 | `BAD3`/`BAD4` 基线不完整（缺 `pencil-bridge/SKILL.md`） | 退出码虽为 1，却是因为「缺 SKILL.md」而非被测行为 —— **假阳性** | 同上：每个反例只在完整基线上注入**单一**缺陷 |
+| 3 | `bin/check` 用整文件 `grep` 检测 legacy/banned 键 | 正文里出现 `allowed-tools:` 字样即**误报**（DSH 实际只读 frontmatter） | 新增 `fm_has_key()`（awk，只在前 1 个 frontmatter 块内查找） |
+
+另外把 `check_case` 强化为**同时断言退出码与输出中的具体原因**（第 4 个参数 `needle`），从机制上堵死假阳性。
+
+顺带加固：`bin/link` 增加源技能齐全性前置校验 —— 否则软链分支会造**悬空软链**、宿主静默忽略，复制分支则在中途崩溃，两种失败都不报清楚原因。
+
+实测结果：`tests/check.test.sh` **9/9 通过**、`tests/link.test.sh` **27/27 通过**；修正后**再次从计划文件本身提取**并重跑，同样 9/9 与 27/27 —— 计划中给出的代码是可执行且已实际执行的。
 
 ---
 
