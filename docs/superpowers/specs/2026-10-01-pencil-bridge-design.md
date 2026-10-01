@@ -21,7 +21,7 @@
 ## 2. Non-goals
 
 - **不自己解析 `.pen` 文件格式**。一切结构读写走 MCP；磁盘 `.pen` 是明文 JSON 这一事实只作为最后手段记录，不作为实现路径（磁盘副本可能落后于 app 内存）。
-- **不改动 Pen.app 自身**，不碰 `~/.pencil/` 下的应用数据。
+- **不修改 Pen.app 自身的任何数据**。只读探测仅限明确列出的少数文件（`.pen` 的最近打开记录、`workspaceFolders` 等），且**必须跳过 §3.7 的凭据清单**。
 - **不碰 `# >>> dsh-skill-mcp-panel:mcp:begin` 受管块**（详见 §6.4）。
 - **不读明文凭据文件**（清单见 §3.7）。
 - 不做可视化界面；全部能力通过命令与技能文本交付。
@@ -132,6 +132,7 @@ Print("SENTINEL_COUNT:", out.length);
   - `ref` 指向组件 id；`descendants` 是**按子节点 id 的覆盖**。
   - `{resolveInstances:true}` 时子节点 id 形如 `instanceId/childId`。
 - **`path` 节点**关键字段：`geometry`（SVG path 串）、`viewBox`（**节点上的显式字段，数组形式如 `[0,0,24,24]`**）、`fillRule`、`fill`、`stroke`、`strokeWidth`、`strokeLinecap`、`strokeLinejoin`。
+  - 以下样本取自 `hanzi_write.pen` 的 `E5QUX` 子树（「25 · 图标规范 / 还差 12 枚」），其类型直方图为 `{frame:60, text:18, icon:34, path:7}` —— 即 7 个真矢量 `path`（§14 验收标准第 4 条引用此处）。
   - **`viewBox` 只在 `includePathGeometry: true` 时随 `geometry` 一起返回**（此前的「由 width/height 推导」是错的）。
   - `fill: "#00000000"` 是**全透明**，导出时应落成 `fill="none"`。
   - **`strokeWidth` 是节点像素坐标下的值**，不能直接写进 viewBox 坐标系。实测样本 `width:72, height:72, viewBox:[0,0,24,24], strokeWidth:6`；按 `6 × 24/72 = 2` 换算恰好是 lucide 标准描边。**此换算规则标为待实证，不得当定论写进实现。**
@@ -261,6 +262,9 @@ Print("SENTINEL_COUNT:", out.length);
 ~/.claude/skills/<name>  -> ~/Project/pencil-bridge/skills/<name>
 ~/.codex/skills/<name>   -> ~/Project/pencil-bridge/skills/<name>
 ```
+
+- **`<name>` 包含全部五个技能**：`pencil-bridge`（主 bundle）+ `pencil-init` / `pencil-map` / `pencil-sync` / `pencil-assets`。
+  **主 bundle 必须一起软链** —— 薄壳正是靠 `~/.agents/skills/pencil-bridge/` 这个同级兄弟来解析相对路径（见 §12），少了它相对路径会断。
 
 - 脚本必须**幂等**：已存在且指向正确的软链跳过；存在但不正确的先删再建；`.codex/skills` 不存在则创建。
 - 必须有 `--dry-run`。
@@ -546,7 +550,13 @@ Pen.app **单实例**，隔离不能靠多实例。唯一可行路径是 **`file
 - `stack-kotlin.md` —— gradle、XML 布局 / Compose、`colors.xml` 输出
 - `stack-web.md` —— package.json、CSS 变量输出、Tailwind 映射约定（若有）
 
-薄命令 SKILL.md 通过**绝对路径**指向主 bundle（例：`/Users/howard/Project/pencil-bridge/skills/pencil-bridge/references/document-routing.md`），因为技能被软链后相对路径不可靠。
+薄命令 SKILL.md 用**相对路径**指向主 bundle：`../pencil-bridge/references/<file>.md`。
+
+之所以相对路径成立，是因为两个目录在 `skills/` 下是**同级兄弟**：无论宿主按虚拟路径解析（`~/.agents/skills/pencil-map/../pencil-bridge/…` → `~/.agents/skills/pencil-bridge/…`，本身也是软链）还是按 realpath 解析（`~/Project/pencil-bridge/skills/pencil-map/../pencil-bridge/…`），两次都落到真源。
+
+**禁止使用绝对路径** —— 它会让仓库克隆到任意位置后失效。
+
+代价：Codex 若走复制模式，`bin/link` 必须把 `skills/` 下的**全部五个技能**一起复制，否则同级关系断裂。
 
 ---
 
