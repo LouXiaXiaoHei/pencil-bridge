@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# bin/link —— 把 skills/ 下的技能扇出到三个 harness 的技能根
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SKILLS_SRC="$REPO_ROOT/skills"
+
+SKILL_NAMES=(pencil-bridge pencil-init pencil-map pencil-sync pencil-assets)
+
+DRY_RUN=0
+TARGETS=()
+
+usage() {
+  cat <<'EOF'
+用法: bin/link [--dry-run] [--only agents|claude|codex] [--help]
+
+  --dry-run          只打印将要做的事，不落盘
+  --only <harness>   只处理一个：agents | claude | codex
+  --help             显示本帮助
+
+扇出方式:
+  ~/.agents/skills/<name>   目录软链   (DSH，已证实跟随软链)
+  ~/.claude/skills/<name>   目录软链   (Claude Code，已证实)
+  ~/.codex/skills/<name>    复制副本   (Codex，是否跟随软链未证实，不赌)
+EOF
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) DRY_RUN=1 ;;
+    --only) shift; [ $# -gt 0 ] || { echo "--only 需要参数" >&2; exit 2; }; TARGETS+=("$1") ;;
+    --help|-h) usage; exit 0 ;;
+    *) echo "未知参数: $1" >&2; usage >&2; exit 2 ;;
+  esac
+  shift
+done
+
+# 源技能必须齐全：否则软链分支会造出悬空软链（宿主静默忽略），复制分支会中途崩掉
+for n in "${SKILL_NAMES[@]}"; do
+  [ -d "$SKILLS_SRC/$n" ] || { echo "缺源技能目录: $SKILLS_SRC/$n" >&2; exit 1; }
+done
+
+want() {
+  [ ${#TARGETS[@]} -eq 0 ] && return 0
+  local t; for t in "${TARGETS[@]}"; do [ "$t" = "$1" ] && return 0; done
+  return 1
+}
+
+run() { if [ "$DRY_RUN" -eq 1 ]; then printf '  [dry-run] %s\n' "$*"; else "$@"; fi; }
+
+link_one() { # $1=root $2=name
+  local root="$1" name="$2" src="$SKILLS_SRC/$2" dst="$1/$2"
+  run mkdir -p "$root"
+  if [ -L "$dst" ]; then
+    if [ "$(readlink "$dst")" = "$src" ]; then
+      echo "  = 已是最新: $dst"; return 0
+    fi
+    echo "  ~ 重建软链: $dst"; run rm -f "$dst"
+  elif [ -e "$dst" ]; then
+    echo "  ! 同名非软链已存在，替换为软链: $dst"; run rm -rf "$dst"
+  else
+    echo "  + 新建软链: $dst"
+  fi
+  run ln -s "$src" "$dst"
+}
+
+copy_one() { # $1=root $2=name
+  local root="$1" name="$2" src="$SKILLS_SRC/$2" dst="$1/$2"
+  run mkdir -p "$root"
+  if [ -e "$dst" ] || [ -L "$dst" ]; then
+    echo "  ~ 重置副本: $dst"; run rm -rf "$dst"
+  else
+    echo "  + 新建副本: $dst"
+  fi
+  run cp -R "$src" "$dst"
+}
+
+echo "仓库: $REPO_ROOT"
+echo "技能: ${SKILL_NAMES[*]}"
+echo
+
+if want agents; then
+  echo "→ DSH: ${HOME}/.agents/skills (软链)"
+  for n in "${SKILL_NAMES[@]}"; do link_one "${HOME}/.agents/skills" "$n"; done
+  echo
+fi
+
+if want claude; then
+  echo "→ Claude Code: ${HOME}/.claude/skills (软链)"
+  for n in "${SKILL_NAMES[@]}"; do link_one "${HOME}/.claude/skills" "$n"; done
+  echo
+fi
+
+if want codex; then
+  echo "→ Codex CLI: ${HOME}/.codex/skills (复制)"
+  for n in "${SKILL_NAMES[@]}"; do copy_one "${HOME}/.codex/skills" "$n"; done
+  echo
+fi
+
+echo "完成。"
