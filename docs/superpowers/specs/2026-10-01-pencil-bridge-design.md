@@ -248,27 +248,30 @@ Print("SENTINEL_COUNT:", out.length);
 
 三个 harness 的技能根**两两不相交**，不存在任何「一个目录被三者原生扫描」的公共位置：
 
-| Harness | 用户级技能根 | 触发语法 | 跟随软链 |
+| Harness | 用户级技能根 | 触发语法 | 本项目扇出方式 |
 |---|---|---|---|
-| DSH | `~/.agents/skills/`（rank 500，另有不存在的 `~/.dsh/skills` rank 400） | `/name` | ✅ 源码证实：`nodeEntryKind()` 对软链走 `stat` 而非 `lstat` |
-| Claude Code | `~/.claude/skills/` | `/name` | ✅ 现役配置（74 条目录软链） |
-| Codex CLI | `~/.codex/skills/` | **`$SkillName`** | ⚠️ **未证实** |
+| DSH | `~/.agents/skills/`（rank 500，另有不存在的 `~/.dsh/skills` rank 400） | `/name` | **软链** —— 源码证实跟随：`nodeEntryKind()` 对软链走 `stat` 而非 `lstat` |
+| Claude Code | `~/.claude/skills/` | `/name` | **软链** —— 现役配置即有 74 条目录软链 |
+| Codex CLI | `~/.codex/skills/` | **`$SkillName`** | **复制** —— 是否跟随软链未证实且无法脚本化验证（§13.3），不赌 |
 
 - 项目级根：DSH `<projectRoot>/.dsh/skills`(rank 100) / `.agents/skills`(200)；Claude Code `<repo>/.claude/skills/`。**本设计不使用项目级根**（技能要跨项目共享）。
-- **`bin/link` 为每个技能建三条目录软链**，指向仓库内的真源：
+- **`bin/link` 对三个技能根采用两种扇出方式**：
 
 ```
-~/.agents/skills/<name>  -> ~/Project/pencil-bridge/skills/<name>
-~/.claude/skills/<name>  -> ~/Project/pencil-bridge/skills/<name>
-~/.codex/skills/<name>   -> ~/Project/pencil-bridge/skills/<name>
+~/.agents/skills/<name>  ->  ~/Project/pencil-bridge/skills/<name>   # 目录软链
+~/.claude/skills/<name>  ->  ~/Project/pencil-bridge/skills/<name>   # 目录软链
+~/.codex/skills/<name>    =  仓库内 skills/<name> 的复制副本          # 复制，非软链
 ```
+
+- **DSH 与 Claude 走目录软链** —— 两者都已被证实跟随软链（DSH 见上表；Claude 有 74 条现役目录软链为证），物理副本只保留仓库内一份。
+- **Codex 走复制，不依赖软链**（用户 2026-10-01 裁决）。理由：Codex CLI 无法脚本化调用（`--version` / `--help` 挂起，重定向 stdin 后 rc=0 但零输出），「是否跟随软链」既未证实、也无法在实现前自动实测 —— **不赌**。
 
 - **`<name>` 包含全部五个技能**：`pencil-bridge`（主 bundle）+ `pencil-init` / `pencil-map` / `pencil-sync` / `pencil-assets`。
-  **主 bundle 必须一起软链** —— 薄壳正是靠 `~/.agents/skills/pencil-bridge/` 这个同级兄弟来解析相对路径（见 §12），少了它相对路径会断。
+  **主 bundle 必须一起处理** —— 薄壳正是靠 `skills/` 下这个同级兄弟来解析相对路径（见 §12），少了它相对路径会断。复制分支尤其不能漏，否则副本目录里的同级关系一并断裂。
 
-- 脚本必须**幂等**：已存在且指向正确的软链跳过；存在但不正确的先删再建；`.codex/skills` 不存在则创建。
+- 脚本必须**幂等**：软链分支 —— 已存在且指向正确则跳过，存在但不正确则先删再建；复制分支 —— 先删旧副本再整体拷贝，保证与真源一致。`.codex/skills` 不存在则创建。
 - 必须有 `--dry-run`。
-- **若 Codex 实测不跟随软链**：仅对 Codex 退回「复制目录」模式（写入带 `--only-codex-copy` 标记），其余两个 harness 仍用软链。此分支在实现前需先做一次假技能实测。
+- 因 Codex 走复制，**每次重跑 `bin/link` 都是一次三 harness 同步** —— 改完技能内容后重跑一次即可让三处一致。
 
 ### 4.4 frontmatter 铁律
 
@@ -566,7 +569,7 @@ Pen.app **单实例**，隔离不能靠多实例。唯一可行路径是 **`file
 
 1. **`strokeWidth` 的 viewBox 换算规则** —— 样本仅一例（72×72 / viewBox 24 / strokeWidth 6 → 2）。标为待实证。
 2. **写操作是否立即持久化到磁盘** —— `execute` 提交路径未见 `saveDocument` / `writeFile`。实现不得假设已落盘。
-3. **Codex 是否跟随 `~/.codex/skills/<name>` 软链** —— 完全未证。若不跟随，退回复制模式。
+3. **Codex 是否跟随 `~/.codex/skills/<name>` 软链** —— **既未证实，也无法脚本化验证**：`/opt/homebrew/bin/codex`（v0.154.0）的 `--version` / `--help` 直接挂起（30 s+ 零输出），stdin 接 `/dev/null` 后 rc=0 但 stdout/stderr 全空。**已裁决（用户 2026-10-01）：不赌，Codex 一律走复制模式**，见 §4.3。
 4. **除 DSH 外，各 harness 写入后是否需重启** —— 无证据，一律按「需重启或新会话」处理并在文案里标「未验证」。
 5. **DSH 上 `panel-mcp-pencil` 与 `json-pencil` 谁真正生效** —— argv 相同，无法区分。（按用户指示不深挖）
 6. **`--app` 能否指向自造的实例名** —— `getAppName()` 硬编码 `"desktop"`，但 VS Code 用 `visual_studio_code`。未验证可否自造。
