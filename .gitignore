@@ -6,3 +6,6 @@
 !docs/superpowers/specs/**
 !docs/superpowers/plans/
 !docs/superpowers/plans/**
+
+# subagent-driven-development 的短期工作区（ledger / brief / report / review 包），不入库
+.superpowers/
