@@ -35,6 +35,18 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# --only 的值必须是我们真的认识的 harness。否则拼错一个字母（--only agent）会
+# 打印表头与"完成。"、退出 0，却什么也没装——Task 14 会真机跑这个脚本，
+# 静默的成功比报错危险得多。
+if [ ${#TARGETS[@]} -gt 0 ]; then
+  for t in "${TARGETS[@]}"; do
+    case "$t" in
+      agents|claude|codex) ;;
+      *) echo "未知 harness: $t" >&2; exit 2 ;;
+    esac
+  done
+fi
+
 # 源技能必须齐全：否则软链分支会造出悬空软链（宿主静默忽略），复制分支会中途崩掉
 for n in "${SKILL_NAMES[@]}"; do
   [ -d "$SKILLS_SRC/$n" ] || { echo "缺源技能目录: $SKILLS_SRC/$n" >&2; exit 1; }
