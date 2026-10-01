@@ -84,7 +84,8 @@ Export(nodeIds, "png"|"jpeg"|"webp"|"pdf"|"html-tailwind"|"html-css", outputPath
 - **目标文档未打开、或路径不可解析时，请求静默回退到「最后聚焦的文档」，不报错。** 这是最危险的失败模式。
 - 路由实现是三级查找：① `file://` URI 直命中 → ② 遍历设备比对 `getFileURIForPath(filePath) === deviceURI`（**裸路径只对已打开文档有效**）→ ③ 兜底 `lastFocusedResource`。
 - `lastFocusedResource` 在**用户点击窗口**时更新（`window-focused` 事件）→ 焦点随时可能被用户改掉。
-- **`get_app_state`、`read_skill`、`get_style`、`browser` 都没有 `filePath` 参数**，永远命中兜底分支。→ **`get_app_state` 绝不能用来判断写入目标。**
+- **`get_app_state`、`read_skill`、`get_style` 没有 `filePath` 参数**，永远命中兜底分支。→ **`get_app_state` 绝不能用来判断写入目标。**
+  **更正（2026-10-01 实测）**：`browser` 的工具 schema **确实声明了 `filePath`** —— stdio `initialize` + `tools/list` 实测其 `properties` 含 `filePath` 且 `required = ["filePath","action"]`（描述文案写的是 "An optional file path to access a .pen file."）。初稿把它误列入「没有 `filePath`」的一组。`browser` 的 `filePath` **是否实际参与文档路由未经实测**，故此处只陈述 schema 事实，不对其路由行为下结论。
 - MCP 二进制里**没有任何 open/switch/activate/focus document 工具** → 无法通过 MCP 切换活动文档。要打开某个 `.pen`，只能 `open -a Pen <path>`（在既有实例里打开）或让用户手动打开。
 - 失败时（文档真的不可达）错误原文：`Failed to access file "<path>". A file needs to be open in the editor to perform this action.`
 

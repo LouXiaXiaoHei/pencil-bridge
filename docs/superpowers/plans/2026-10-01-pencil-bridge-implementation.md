@@ -865,7 +865,7 @@ git commit -m "docs: reference · mcp-toolbox"
 
 1. **三探针实测表** —— 逐字抄 spec §3.2 的表（三个探针 × `filePath` / 焦点 / 实际读到）。
 2. **路由结论** —— `filePath` 有效且按文档路由、**不改 `lastFocusedResource`**；目标文档未打开或路径不可解析时**静默回退到「最后聚焦的文档」且不报错**（最危险的失败模式）；三级查找顺序（URI 直命中 → 设备比对 → `lastFocusedResource` 兜底）。
-3. **哪些工具没有 `filePath`** —— `get_app_state` / `read_skill` / `get_style` / `browser`，永远命中兜底分支。
+3. **哪些工具没有 `filePath`** —— `get_app_state` / `read_skill` / `get_style`（**三个**），永远命中兜底分支。另注：`browser` 的 schema **声明了** `filePath` 且列在 `required` 里（2026-10-01 stdio `tools/list` 实测），但它**是否参与文档路由未经实测** —— 如实写成「未验证」，不要断言。
 4. **无法切换活动文档** —— MCP 没有 open/switch/activate 工具；要打开只能 `open -a Pen <path>`（在既有实例里打开）。
 5. **只读哨兵范式** —— 逐字抄 spec §3.2 的哨兵代码块，外加基线值：`yuexiaoshi.pen` 顶层 136、`hanzi_write.pen` 顶层 183。
 6. **失败原文** —— `Failed to access file "<path>". A file needs to be open in the editor to perform this action.`
