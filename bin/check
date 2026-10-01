@@ -100,6 +100,19 @@ for dir in "$SKILLS_DIR"/*/; do
     fail "$name: ${mdfile#"$SKILLS_DIR"/} 出现绝对路径引用（仓库克隆到别处即失效）"
   done < <(find "$dir" -type f -name '*.md' | sort)
 
+  # 悬空 reference 必须计入本技能 finding，否则会出现「ok: X」与「FAIL: X …」并存
+  # 的自相矛盾输出。只对五个期望技能（含 hub）检查，保持 (c) 的覆盖范围不变。
+  case " ${SKILL_DIRS[*]} " in
+    *" $name "*)
+      while read -r ref; do
+        [ -z "$ref" ] && continue
+        [ -f "$SKILLS_DIR/pencil-bridge/references/$ref" ] \
+          || fail "$name 引用了不存在的 reference: $ref"
+      done < <(grep -oE '\.\./pencil-bridge/references/[a-z0-9-]+\.md' "$skill_md" \
+                 | sed 's#.*/##' | sort -u)
+      ;;
+  esac
+
   # 只有本技能无任何 finding 时才报 ok
   if [ "$FAIL_COUNT" -eq "$n0" ]; then ok "$name"; fi
 done
@@ -107,17 +120,6 @@ done
 for r in "${REFS[@]}"; do
   [ -f "$SKILLS_DIR/pencil-bridge/references/$r.md" ] \
     || fail "缺 reference: references/$r.md"
-done
-
-for cmd in "${SKILL_DIRS[@]}"; do
-  f="$SKILLS_DIR/$cmd/SKILL.md"
-  [ -f "$f" ] || continue
-  while read -r ref; do
-    [ -z "$ref" ] && continue
-    [ -f "$SKILLS_DIR/pencil-bridge/references/$ref" ] \
-      || fail "$cmd 引用了不存在的 reference: $ref"
-  done < <(grep -oE '\.\./pencil-bridge/references/[a-z0-9-]+\.md' "$f" \
-             | sed 's#.*/##' | sort -u)
 done
 
 if [ "$FAILED" -eq 0 ]; then echo "全部通过。"; else echo "存在失败项。" >&2; fi

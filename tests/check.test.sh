@@ -34,6 +34,23 @@ check_case_absent() {
   echo "  ok:   $desc"; PASS=$((PASS+1))
 }
 
+# $1=描述 $2=期望退出码 $3=skills 目录 $4=必须出现的子串 $5=不得出现的子串
+# 用于「同一个技能名不得同时出现在 ok 行与 FAIL 行」这类互斥断言
+check_case_exclusive() {
+  local desc="$1" want="$2" dir="$3" need="$4" bad="$5" got out
+  out="$(PENCIL_BRIDGE_SKILLS_DIR="$dir" bash "$REPO_ROOT/bin/check" 2>&1)"; got=$?
+  if [ "$got" -ne "$want" ]; then
+    echo "  FAIL: $desc（期望退出码 $want，实得 $got）"; FAIL=$((FAIL+1)); return
+  fi
+  if ! printf '%s\n' "$out" | grep -qF -- "$need"; then
+    echo "  FAIL: $desc（输出未含: $need）"; FAIL=$((FAIL+1)); return
+  fi
+  if printf '%s\n' "$out" | grep -qF -- "$bad"; then
+    echo "  FAIL: $desc（输出不应含: $bad）"; FAIL=$((FAIL+1)); return
+  fi
+  echo "  ok:   $desc"; PASS=$((PASS+1))
+}
+
 REFS="mcp-toolbox document-routing write-safety design-map assets-extraction init-and-mcp stack-flutter stack-kotlin stack-web"
 SKILLS="pencil-bridge pencil-init pencil-map pencil-sync pencil-assets"
 
@@ -140,6 +157,34 @@ check_case "hub SKILL.md 的悬空引用被发现" 1 "$FX_C" "pencil-bridge 引�
 FX_D="$TMP/fx_d"; mk_full "$FX_D"
 inject_fm "$FX_D/pencil-map/SKILL.md" "allowed-tools: [Bash]"
 check_case_absent "有 finding 的技能不再打印 ok 行" 1 "$FX_D" "ok:   pencil-map"
+
+# ── Fix 轮 2 新增：悬空引用必须计入本技能 finding，禁止「ok: X」与「FAIL: X …」并存 ──
+# 薄壳（只有一个技能目录、没有任何 reference）里的悬空引用：FAIL 要出现，ok 行必须消失
+FX_E1="$TMP/fx_e1"; mkdir -p "$FX_E1/pencil-map"
+printf -- '---\nname: pencil-map\ndescription: 薄壳。\n---\n见 ../pencil-bridge/references/nope.md\n' \
+  > "$FX_E1/pencil-map/SKILL.md"
+check_case_exclusive "薄壳悬空引用：FAIL 出现且无同名 ok 行" 1 "$FX_E1" \
+  "FAIL: pencil-map 引用了不存在的 reference: nope.md" "ok:   pencil-map"
+check_case_absent "薄壳悬空引用的 ok 行必须消失" 1 "$FX_E1" "ok:   pencil-map"
+
+# hub 同样处理
+FX_E2="$TMP/fx_e2"; mkdir -p "$FX_E2/pencil-bridge"
+printf -- '---\nname: pencil-bridge\ndescription: 薄壳 hub。\n---\n见 ../pencil-bridge/references/nope.md\n' \
+  > "$FX_E2/pencil-bridge/SKILL.md"
+check_case_exclusive "薄壳悬空引用（hub）：FAIL 出现且无同名 ok 行" 1 "$FX_E2" \
+  "FAIL: pencil-bridge 引用了不存在的 reference: nope.md" "ok:   pencil-bridge"
+check_case_absent "薄壳悬空引用（hub）的 ok 行必须消失" 1 "$FX_E2" "ok:   pencil-bridge"
+
+# 同一不变式对其它 finding 类别也成立：reference 文件里的绝对路径
+FX_E3="$TMP/fx_e3"; mk_full "$FX_E3"
+echo '见 /Users/someone/x.md' >> "$FX_E3/pencil-bridge/references/mcp-toolbox.md"
+check_case_exclusive "绝对路径类 finding 也不打印同名 ok 行" 1 "$FX_E3" \
+  "绝对路径" "ok:   pencil-bridge"
+
+# 反向守卫：全局「缺 reference」不点名技能，故不抑制 ok 行（控制器裁决：保持原样）
+FX_E4="$TMP/fx_e4"; mk_full "$FX_E4"
+rm -rf "$FX_E4/pencil-bridge/references"
+check_case "全局缺 reference 不抑制技能 ok 行" 1 "$FX_E4" "ok:   pencil-bridge"
 
 echo
 echo "通过 $PASS 项，失败 $FAIL 项。"
