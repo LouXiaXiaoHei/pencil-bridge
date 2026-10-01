@@ -11,17 +11,17 @@
 
 | 工具 | 用途 | 备注 |
 |---|---|---|
-| `execute` | 在文档上执行一段 JavaScript（canvas API：`Insert` / `Update` / `Copy` / `Get` / `Print` / `Export` …）。**唯一能指定文档的工具**。 | 靠参数 `filePath` 路由文档 |
+| `execute` | 在文档上执行一段 JavaScript（canvas API：`Insert` / `Update` / `Copy` / `Get` / `Print` / `Export` …）。**唯一能通过脚本读写文档内容的工具**；schema `required = ["filePath"]`，所以**必须**传 `filePath`。 | 靠参数 `filePath` 路由文档 |
 | `get_app_state` | 读 pen.dev 应用的当前状态、当前用户选中项，以及上手所必需的信息。 | **没有 `filePath` 参数** |
 | `get_style` | 加载 `.pen` 工作用的视觉风格原型（可配置的字体 / 颜色 / 图像参考）。风格只提供参考值，**不保存变量**。 | **没有 `filePath` 参数** |
 | `read_skill` | 读 pen.dev 技能文档：`SKILL.md`，以及它引用的 `execute.md` / `guide/*.md` 等文件。 | **没有 `filePath` 参数** |
-| `browser` | 用应用内置浏览器操作真实网站：`load-page` / `import-to-canvas` / `screenshot-to-canvas` / `return-element` / `return-screenshot` / `cdp`。 | **没有 `filePath` 参数** |
+| `browser` | 用应用内置浏览器操作真实网站：`load-page` / `import-to-canvas` / `screenshot-to-canvas` / `return-element` / `return-screenshot` / `cdp`。 | **声明了 `filePath`**：schema `required = ["filePath","action"]`，描述文案为 "An optional file path to access a .pen file."；**是否实际参与文档路由【未验证】**，不得据此断言 |
 
 **旧文档里的 `pencil_batch_get` / `pencil_get_screenshot` / `pencil_get_variables` 不存在，不得引用。**
 
 CLI 参数只有 `--app <name>`（决定 socket 名）、`--agent <自由文本>`、`--conversation_id <id>`、`--enable_spawn_agents`。**没有任何指定 `.pen` 文件的参数** —— 想读/写某个 `.pen`，只能靠 `execute` 的 `filePath`。
 
-> 四个没有 `filePath` 的工具（`get_app_state` / `read_skill` / `get_style` / `browser`）永远命中「最后聚焦的文档」兜底分支。所以 **`get_app_state` 绝不能用来判断写入目标**；文档路由细节见 `../pencil-bridge/references/document-routing.md`。
+> 三个没有 `filePath` 的工具（`get_app_state` / `read_skill` / `get_style`）永远命中「最后聚焦的文档」兜底分支。`browser` 的 schema **确实声明了** `filePath` 且列在 `required` 里，但它**是否实际参与文档路由【未验证】** —— 只陈述 schema 事实，不对其路由行为下结论，也不要依赖它来选文档。所以 **`get_app_state` 绝不能用来判断写入目标**；文档路由细节见 `../pencil-bridge/references/document-routing.md`。
 
 ---
 
