@@ -346,9 +346,9 @@ spawn 目标 `command + args`，依次发 `initialize` / `notifications/initiali
 
 - DSH 上有**两套并行机制**，pencil 同时存在两处：
   - `~/.dsh/profiles/desktop/cordis.patch.yml` 受管块内的 `panel-mcp-pencil`
-  - `~/.dsh/storages/mcp_connector.json` 的 `tables.connections."json-pencil"`（`enabled: true`）
+  - `~/.dsh/storages/mcp_connector.json` 的 `tables.connections."json-pencil"`（实测：**该键当前不在 `tables.connections` 里**，该表实测只有 `chrome-devtools-chrome-devtools`；`json-pencil` 只出现在 `tables.snapshots` 的历史快照中 ⇒ **不能只靠 grep 全文件判定在线注册**）
   - 两者 `serverName` 都是 `pencil`，argv 也相同 → 实测只起了一个进程，**无法从 argv 区分来源**。
-- **`/pencil-init` 第 0 步必须两处都 grep `pencil`**：任一命中就**不写第二处**；两处都有则让用户选一处。
+- **`/pencil-init` 第 0 步必须两处都查 `pencil`**：任一命中就**不写第二处**；两处都有则让用户选一处。（对 `mcp_connector.json` 要看 `tables.connections` 的**实际键**，**不要只 grep 全文件** —— 快照表会给出假阳性。）
 - **绝不修改 `# >>> dsh-skill-mcp-panel:mcp:begin` 与 `# <<< …:end` 之间的内容** —— 面板重写会**静默抹掉**块内手写内容。若必须新增，在**标记之外**追加独立的 `- insert:` 条目（形态参考 `~/.dsh/profiles/tauri/cordis.patch.yml` 里的手写 `- id: mcp-pencil`）。
 - `cordis.yml`（合成产物）**不要手改**。
 - `mcp_connector.json` 是 373 KB 的版本化领域存储（含快照 / scope 绑定），**建议交给 GUI 或插件 API，不手写**。
