@@ -17,6 +17,7 @@ metadata:
 - `../pencil-bridge/references/write-safety.md`（**写入必读**，反向模式逐条执行：十二条写安全规程、备份 / 幂等 / 凭据禁读）
 - `../pencil-bridge/references/design-map.md`（`.pencil-bridge/design-map.yaml` 协议：页面与节点 id 的对应关系）
 - `../pencil-bridge/references/document-routing.md`（会话启动检查单、哨兵范式、`filePath` 路由与静默回退）
+- `../pencil-bridge/references/mcp-toolbox.md`（`execute` API 全貌、`Get` 的 `GetOptions`（含 `depth` / `resolveVariables`）、visitor 写法）
 - 与探测到的栈对应的那一份分栈 reference（**按探测到的栈只读对应那一份**）：`../pencil-bridge/references/stack-flutter.md` / `../pencil-bridge/references/stack-kotlin.md` / `../pencil-bridge/references/stack-web.md`
 
 ## 输入

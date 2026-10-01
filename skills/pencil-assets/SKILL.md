@@ -25,9 +25,9 @@ metadata:
 ## 流程
 
 1. **校验文档身份**：跑会话启动检查单与哨兵。
-2. **按类别取素材**：位图 → 解析 image fill 的 `url` 后直接拷磁盘文件（不走 MCP 字节流）；矢量 → `path` 节点 + `includePathGeometry: true` 取 `geometry` / `viewBox` / `strokeWidth` 等；图标引用 → 只取 `library` + `icon` 名；变量 token → `Print(GetVariables())`。
+2. **按类别取素材**：四类产物的取法逐条见 `../pencil-bridge/references/assets-extraction.md` §1 取法表与 §2 / §3 / §4。
 3. **按栈输出 token**：加载对应分栈 reference，按其格式与落点写出。
-4. **落地**：产物写进 `<projectRoot>/.pencil-bridge/assets/<timestamp>/`。
+4. **落地**：产物按 `../pencil-bridge/references/assets-extraction.md` §7 的约定写出。
 
 ## 输出契约
 
@@ -36,7 +36,7 @@ metadata:
 
 ## 铁律
 
-- **不导出 `icon` 节点的矢量** —— Pen.app 不提供源码，`Export` 无 svg 格式，只出「库名 + 图标名」引用。
+- **不导出 `icon` 节点的矢量** —— 只出「库名 + 图标名」引用（原因见 `../pencil-bridge/references/assets-extraction.md` §6）。
 - **不导出 html-tailwind / html-css** —— 那是整页重建，不属于本命令的「提取素材」。
 - `strokeWidth` 的 viewBox 换算规则**待实证**，不得当定论用。
 - 变量引用默认落 `currentColor`；是否 resolve 成实际色值是**待用户确认的实现细节**，以开关形式暴露，不写死。
