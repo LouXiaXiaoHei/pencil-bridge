@@ -351,7 +351,7 @@ spawn 目标 `command + args`，依次发 `initialize` / `notifications/initiali
 - **`/pencil-init` 第 0 步必须两处都查 `pencil`**：任一命中就**不写第二处**；两处都有则让用户选一处。（对 `mcp_connector.json` 要看 `tables.connections` 的**实际键**，**不要只 grep 全文件** —— 快照表会给出假阳性。）
 - **绝不修改 `# >>> dsh-skill-mcp-panel:mcp:begin` 与 `# <<< …:end` 之间的内容** —— 面板重写会**静默抹掉**块内手写内容。若必须新增，在**标记之外**追加独立的 `- insert:` 条目（形态参考 `~/.dsh/profiles/tauri/cordis.patch.yml` 里的手写 `- id: mcp-pencil`）。
 - `cordis.yml`（合成产物）**不要手改**。
-- `mcp_connector.json` 是 373 KB 的版本化领域存储（含快照 / scope 绑定），**建议交给 GUI 或插件 API，不手写**。
+- `mcp_connector.json` 是 数百 KB 的版本化领域存储（含快照 / scope 绑定），**建议交给 GUI 或插件 API，不手写**。
 - 生效：受管块走面板 = 热加载；手改文件 = 保守起见提示用户重启 DSH 网关。
 
 ### 6.5 写入铁律
