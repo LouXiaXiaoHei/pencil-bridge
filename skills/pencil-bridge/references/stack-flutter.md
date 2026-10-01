@@ -34,7 +34,7 @@ feature-first 的 `lib/features/<feature>/…` 与平铺的 `lib/pages/` 同样�
 
 定位手法（按可靠度排序）：
 
-1. **路由表（若项目有）**：入口文件（`main.dart` / `app.dart`）里 `routes` / `onGenerateRoute` / `getPages`（GetX，键是 `GetPage.name`）/ GoRouter 的 `path` 的键 → 页面 widget 名；**没有路由表就直接转手法 2**。
+1. **路由表（若项目有）**：入口文件（如 `main.dart` / `app.dart` 或 `lib/routes/` 等独立路由文件）里 `routes` / `onGenerateRoute` / `getPages`（GetX，键是 `GetPage.name`）/ GoRouter 的 `path` 的键 → 页面 widget 名；**有路由表也要用手法 2 补齐未登记路由的页面；没有路由表就直接转手法 2**。
 2. **类名扫描**：`grep -rnE "class [A-Za-z0-9_]*(Page|View|Screen) extends" lib/`（`StatelessWidget` / `StatefulWidget` / `ConsumerWidget` / `GetView` 都算）。**不要只扫 `*Page`** —— 实测某工程（`lib/modules/<feature>/` 布局）的三个页面类里有两个是 `*View`（`GetView` 子类），只扫 `*Page` 会把它们全漏掉。
 3. **目录扫描**：`lib/pages/`、`lib/screens/`、`lib/features/*/presentation/`、`lib/modules/*/` 等，**随项目而异** —— 有的工程把视图直接放在 `lib/modules/<feature>/<name>_view.dart`，只按 `pages` / `screens` 找会一无所获。
 
