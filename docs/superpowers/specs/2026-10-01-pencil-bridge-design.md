@@ -614,4 +614,4 @@ Pen.app **单实例**，隔离不能靠多实例。唯一可行路径是 **`file
 | 工具名前缀 | `dsh-mcp-connector/lib/governance.js:27` |
 | Pen 官方整文件重写 | `app.asar` 内 `@ha/mcp/installer.js` |
 | pen-dev 技能资源 | `app.asar` 内 `out/skills/pen-dev/`（15 个 md） |
-| 写 API 手册 | `/Users/howard/Documents/PCData/pencil-write-api-manual.md` |
+| 写 API 手册 | `docs/reference/pencil-write-api-manual.md`（本仓库内，554 行） |
