@@ -13,10 +13,10 @@ check_case() {
   local desc="$1" want="$2" dir="$3" needle="${4:-}" got out
   out="$(PENCIL_BRIDGE_SKILLS_DIR="$dir" bash "$REPO_ROOT/bin/check" 2>&1)"; got=$?
   if [ "$got" -ne "$want" ]; then
-    echo "  FAIL: $desc（期望退出码 $want，实得 $got）"; FAIL=$((FAIL+1)); return
+    echo "  FAIL: ${desc}（期望退出码 ${want}，实得 ${got}）"; FAIL=$((FAIL+1)); return
   fi
   if [ -n "$needle" ] && ! printf '%s\n' "$out" | grep -qF -- "$needle"; then
-    echo "  FAIL: $desc（退出码正确，但输出未含: $needle）"; FAIL=$((FAIL+1)); return
+    echo "  FAIL: ${desc}（退出码正确，但输出未含: ${needle}）"; FAIL=$((FAIL+1)); return
   fi
   echo "  ok:   $desc"; PASS=$((PASS+1))
 }
@@ -26,10 +26,10 @@ check_case_absent() {
   local desc="$1" want="$2" dir="$3" bad="$4" got out
   out="$(PENCIL_BRIDGE_SKILLS_DIR="$dir" bash "$REPO_ROOT/bin/check" 2>&1)"; got=$?
   if [ "$got" -ne "$want" ]; then
-    echo "  FAIL: $desc（期望退出码 $want，实得 $got）"; FAIL=$((FAIL+1)); return
+    echo "  FAIL: ${desc}（期望退出码 ${want}，实得 ${got}）"; FAIL=$((FAIL+1)); return
   fi
   if printf '%s\n' "$out" | grep -qF -- "$bad"; then
-    echo "  FAIL: $desc（输出不应含: $bad）"; FAIL=$((FAIL+1)); return
+    echo "  FAIL: ${desc}（输出不应含: ${bad}）"; FAIL=$((FAIL+1)); return
   fi
   echo "  ok:   $desc"; PASS=$((PASS+1))
 }
@@ -40,13 +40,13 @@ check_case_exclusive() {
   local desc="$1" want="$2" dir="$3" need="$4" bad="$5" got out
   out="$(PENCIL_BRIDGE_SKILLS_DIR="$dir" bash "$REPO_ROOT/bin/check" 2>&1)"; got=$?
   if [ "$got" -ne "$want" ]; then
-    echo "  FAIL: $desc（期望退出码 $want，实得 $got）"; FAIL=$((FAIL+1)); return
+    echo "  FAIL: ${desc}（期望退出码 ${want}，实得 ${got}）"; FAIL=$((FAIL+1)); return
   fi
   if ! printf '%s\n' "$out" | grep -qF -- "$need"; then
-    echo "  FAIL: $desc（输出未含: $need）"; FAIL=$((FAIL+1)); return
+    echo "  FAIL: ${desc}（输出未含: ${need}）"; FAIL=$((FAIL+1)); return
   fi
   if printf '%s\n' "$out" | grep -qF -- "$bad"; then
-    echo "  FAIL: $desc（输出不应含: $bad）"; FAIL=$((FAIL+1)); return
+    echo "  FAIL: ${desc}（输出不应含: ${bad}）"; FAIL=$((FAIL+1)); return
   fi
   echo "  ok:   $desc"; PASS=$((PASS+1))
 }
@@ -185,6 +185,24 @@ check_case_exclusive "绝对路径类 finding 也不打印同名 ok 行" 1 "$FX_
 FX_E4="$TMP/fx_e4"; mk_full "$FX_E4"
 rm -rf "$FX_E4/pencil-bridge/references"
 check_case "全局缺 reference 不抑制技能 ok 行" 1 "$FX_E4" "ok:   pencil-bridge"
+
+# ── R25(c)：UTF-8 locale 静态守卫 ──
+# bash 3.2 在 UTF-8 locale 下会把紧跟变量的非 ASCII 字节当作变量名的一部分，
+# 一个变量名后面直接放全角标点就会被解析成「名字 + 全角字符」，报 unbound
+# variable 并让整个套件当场死掉。本机默认环境没有 LANG/LC_* 变量，运行时
+# 碰不到这个雷，只有静态扫描能防它回归。
+# 子 shell 先 cd 到仓库根，所以下面跑的就是约定的那行 grep 命令；
+# 正则里 $ 的后面紧跟 [，因此这一行不会匹配到它自己。
+UTF8_FRAGILE="$(cd "$REPO_ROOT" && LC_ALL=C grep -nE \
+  '\$[A-Za-z_][A-Za-z0-9_]*[^ -~]' bin/check bin/link tests/*.sh)"
+UTF8_RC=$?
+if [ -z "$UTF8_FRAGILE" ] && [ "$UTF8_RC" -le 1 ]; then
+  echo "  ok:   无变量紧跟非 ASCII 字节的 UTF-8 脆弱写法"; PASS=$((PASS+1))
+else
+  echo "  FAIL: 存在变量紧跟非 ASCII 字节的 UTF-8 脆弱写法："
+  printf '%s\n' "$UTF8_FRAGILE"
+  FAIL=$((FAIL+1))
+fi
 
 echo
 echo "通过 $PASS 项，失败 $FAIL 项。"

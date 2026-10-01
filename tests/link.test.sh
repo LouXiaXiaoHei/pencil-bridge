@@ -8,7 +8,7 @@ DRY_HOME=""
 export HOME="$TMP_HOME"
 
 # R12（崩溃安全）：本测试会往被跟踪的真源 skills/pencil-assets/SKILL.md 追加内容。
-# 先把它备份到 $TMP_HOME，并用 trap 覆盖 EXIT/INT/TERM 三条退出路径，
+# 先把它备份到 ${TMP_HOME}，并用 trap 覆盖 EXIT/INT/TERM 三条退出路径，
 # 这样 Ctrl-C / timeout / SIGTERM 中断也不会把未提交的改动留在真源上
 # （本脚本刻意没有 set -e，不能依赖"执行到下一行"来恢复）。
 REAL_ASSETS_SKILL="$REPO_ROOT/skills/pencil-assets/SKILL.md"
@@ -85,7 +85,7 @@ assert "源技能缺失时报错退出" \
 
 # --- R15(a): 未知 harness 必须报错退出，不能静默假装成功 ---
 for bad in foo agent agentss; do
-  assert "未知 harness 报错退出（--only $bad）" \
+  assert "未知 harness 报错退出（--only ${bad}）" \
     bash -c '! bash "$1/bin/link" --only "$2" >/dev/null 2>&1' _ "$REPO_ROOT" "$bad"
 done
 assert "未知 harness 退出码为 2" \

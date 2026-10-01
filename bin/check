@@ -84,13 +84,13 @@ for dir in "$SKILLS_DIR"/*/; do
 
   for legacy in disableModelInvocation modelInvocable userInvocable; do
     if fm_has_key "$skill_md" "$legacy"; then
-      fail "$name: 含 legacy 键 $legacy（DSH 会丢弃整个技能）"
+      fail "$name: 含 legacy 键 ${legacy}（DSH 会丢弃整个技能）"
     fi
   done
 
   for banned in allowed-tools argument-hint; do
     if fm_has_key "$skill_md" "$banned"; then
-      fail "$name: 使用 $banned（只在 Claude 生效，破坏三 harness 一致性）"
+      fail "$name: 使用 ${banned}（只在 Claude 生效，破坏三 harness 一致性）"
     fi
   done
 
