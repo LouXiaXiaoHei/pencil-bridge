@@ -194,7 +194,7 @@ Print("SENTINEL_COUNT:", out.length);
 | `yuexiaoshi/docs/yuexiaoshi.pen` | `~/.gitignore_global` 的 `*.pen`（**全局规则**） |
 | `drama_cash/CashTale/docs/CashTale.pen` | `CashTale/.git/info/exclude` 的 `/docs/` |
 
-- 三处仓库 `git log -- '*.pen'` 均无提交；全 `~/Project` 下无 `*.pen.*` / `*.bak` 备份文件。
+- 三处仓库 `git log -- '*.pen'` 均无提交；全 `~/Project` 下无**任何 `.pen` 备份文件**（`find -maxdepth 6` 实测 `*.pen.*` / `*.pen.bak` 命中 0；另有 3 个与 `.pen` 无关的 `.bak`）。
 - `*.pen` 进全局 gitignore 是**用户的既定偏好**，本设计不试图改变它。
 - → **反写必须自建补偿备份**（见 §11）。
 
