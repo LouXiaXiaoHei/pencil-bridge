@@ -19,7 +19,7 @@
 
 **旧文档里的 `pencil_batch_get` / `pencil_get_screenshot` / `pencil_get_variables` 不存在，不得引用。**
 
-CLI 参数只有 `--app <name>`（决定 socket 名）、`--agent <自由文本>`、`--conversation_id <id>`、`--enable_spawn_agents`。**没有任何指定 `.pen` 文件的参数** —— 想读/写某个 `.pen`，只能靠 `execute` 的 `filePath`。
+CLI 参数只有 `--app <name>`（决定 socket 名）、`--agent <自由文本>`、`--conversation_id <id>`、`--enable_spawn_agents`。**没有任何指定 `.pen` 文件的参数** —— 本设计只依赖 `execute` 的 `filePath`（`browser` 的 `filePath` 未验证，不采用）。
 
 > 三个没有 `filePath` 的工具（`get_app_state` / `read_skill` / `get_style`）永远命中「最后聚焦的文档」兜底分支。`browser` 的 schema **确实声明了** `filePath` 且列在 `required` 里，但它**是否实际参与文档路由【未验证】** —— 只陈述 schema 事实，不对其路由行为下结论，也不要依赖它来选文档。所以 **`get_app_state` 绝不能用来判断写入目标**；文档路由细节见 `../pencil-bridge/references/document-routing.md`。
 
