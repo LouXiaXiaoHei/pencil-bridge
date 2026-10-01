@@ -6,12 +6,25 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SKILLS_DIR="${PENCIL_BRIDGE_SKILLS_DIR:-$REPO_ROOT/skills}"
 
 FAILED=0
-fail() { printf 'FAIL: %s\n' "$1" >&2; FAILED=1; }
+FAIL_COUNT=0
+fail() { printf 'FAIL: %s\n' "$1" >&2; FAILED=1; FAIL_COUNT=$((FAIL_COUNT+1)); }
 ok()   { printf 'ok:   %s\n' "$1"; }
 
 NAME_RE='^[a-z0-9]+(-[a-z0-9]+)*$'
 REFS=(mcp-toolbox document-routing write-safety design-map assets-extraction
       init-and-mcp stack-flutter stack-kotlin stack-web)
+# 五个技能目录是硬编码的：整个技能目录缺失也必须失败（glob 会静默跳过）
+SKILL_DIRS=(pencil-bridge pencil-init pencil-map pencil-sync pencil-assets)
+
+# 绝对路径检测：通用形态。先剥掉 URL（http(s)://…）否则文档链接会被误判；
+# 不列 usr，以免误伤 #!/usr/bin/env bash。本正则字符串是检测规则，不是机器路径。
+ABS_PATH_RE='(^|[^A-Za-z0-9._-])/(Users|home|opt|var|tmp|etc|private)/'
+has_abs_path() { # $1=file
+  local hits
+  hits="$(sed -E 's#https?://[^[:space:]]*#URL#g' "$1" 2>/dev/null \
+          | grep -E "$ABS_PATH_RE" || true)"
+  [ -n "$hits" ]
+}
 
 # 复刻 DSH 的 frontmatter 读取：只看首个 --- ... --- 块
 fm_field() { # $1=file $2=key
@@ -37,10 +50,23 @@ fm_has_key() { # $1=file $2=key
 
 [ -d "$SKILLS_DIR" ] || { echo "FAIL: skills 目录不存在: $SKILLS_DIR" >&2; exit 1; }
 
+# 五个期望技能目录缺一不可
+for d in "${SKILL_DIRS[@]}"; do
+  [ -d "$SKILLS_DIR/$d" ] || fail "缺技能目录: $d"
+done
+
 shopt -s nullglob
+
+# skills/ 直属的 .md（不属于任何技能目录）同样要扫
+for f in "$SKILLS_DIR"/*.md; do
+  has_abs_path "$f" || continue
+  fail "$(basename "$f") 出现绝对路径引用（仓库克隆到别处即失效）"
+done
+
 for dir in "$SKILLS_DIR"/*/; do
   name="$(basename "$dir")"
   skill_md="$dir/SKILL.md"
+  n0="$FAIL_COUNT"
 
   if [ ! -f "$skill_md" ]; then fail "$name: 缺 SKILL.md"; continue; fi
 
@@ -68,11 +94,14 @@ for dir in "$SKILLS_DIR"/*/; do
     fi
   done
 
-  if grep -qE '/Users/[A-Za-z0-9._-]+/Project/pencil-bridge' "$skill_md"; then
-    fail "$name: 出现绝对路径引用（仓库克隆到别处即失效）"
-  fi
+  # 该技能目录下所有 .md（含 references/ 与任意子目录）都不得出现绝对路径
+  while IFS= read -r mdfile; do
+    has_abs_path "$mdfile" || continue
+    fail "$name: ${mdfile#"$SKILLS_DIR"/} 出现绝对路径引用（仓库克隆到别处即失效）"
+  done < <(find "$dir" -type f -name '*.md' | sort)
 
-  ok "$name"
+  # 只有本技能无任何 finding 时才报 ok
+  if [ "$FAIL_COUNT" -eq "$n0" ]; then ok "$name"; fi
 done
 
 for r in "${REFS[@]}"; do
@@ -80,7 +109,7 @@ for r in "${REFS[@]}"; do
     || fail "缺 reference: references/$r.md"
 done
 
-for cmd in pencil-init pencil-map pencil-sync pencil-assets; do
+for cmd in "${SKILL_DIRS[@]}"; do
   f="$SKILLS_DIR/$cmd/SKILL.md"
   [ -f "$f" ] || continue
   while read -r ref; do
