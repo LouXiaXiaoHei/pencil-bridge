@@ -83,6 +83,9 @@ Export(nodeIds, "png"|"jpeg"|"webp"|"pdf"|"html-tailwind"|"html-css", outputPath
 - `execute` 的 `filePath` **有效**，按文档路由，且**不改变** `lastFocusedResource`。
 - **目标文档未打开、或路径不可解析时，请求静默回退到「最后聚焦的文档」，不报错。** 这是最危险的失败模式。
 - 路由实现是三级查找：① `file://` URI 直命中 → ② 遍历设备比对 `getFileURIForPath(filePath) === deviceURI`（**裸路径只对已打开文档有效**）→ ③ 兜底 `lastFocusedResource`。
+- **路由是「请求级、工具无关」的**（2026-10-01 追加实现级证据）：所有工具调用都经同一个入口 `@ha/mcp/dist/esm/mcp-transport.js` 的 `handleIPCRequest(request)`，它在分派 `request.name` **之前**先按 `request.payload.filePath` 选定设备连接（调用 `@ha/ipc` 的 `getIPC(filePath)`，即上面三级查找）。⇒ 连接由 `filePath` 决定，工具脚本只在该连接的文档上下文里执行，**读与写由此共用同一条路由**（`execute` 的 schema 亦为 `required: ["filePath"]`、`destructiveHint: true`）。
+- **仍未单独实测的是**：app 侧把「变更类」操作绑定到本连接自己的文档这一环（探针 3 只对**读**证死）⇒ 写路径在交付文本里仍标【未验证】。
+- `getIPC(filePath)` 的入口有 `if (filePath)` 守卫：**`filePath` 缺失时直接跳过 ①②、落 ③ 兜底**（与上面「静默回退」一致）；若连兜底连接都不存在，才返回失败原文。
 - `lastFocusedResource` 在**用户点击窗口**时更新（`window-focused` 事件）→ 焦点随时可能被用户改掉。
 - **`get_app_state`、`read_skill`、`get_style` 没有 `filePath` 参数**，永远命中兜底分支。→ **`get_app_state` 绝不能用来判断写入目标。**
   **更正（2026-10-01 实测）**：`browser` 的工具 schema **确实声明了 `filePath`** —— stdio `initialize` + `tools/list` 实测其 `properties` 含 `filePath` 且 `required = ["filePath","action"]`（描述文案写的是 "An optional file path to access a .pen file."）。初稿把它误列入「没有 `filePath`」的一组。`browser` 的 `filePath` **是否实际参与文档路由未经实测**，故此处只陈述 schema 事实，不对其路由行为下结论。
@@ -365,7 +368,7 @@ spawn 目标 `command + args`，依次发 `initialize` / `notifications/initiali
 | `mcp_servers` | **Codex**（TOML 段） |
 
 - **三个会毒死严格解析器的文件**：
-  - `~/.config/opencode/opencode.json` —— 第 164 行有**尾部逗号**，`JSON.parse` 直接抛 `Expecting property name enclosed in double quotes`。
+  - `~/.config/opencode/opencode.json` —— 第 164 行有**尾部逗号**，`JSON.parse` **直接失败**（本机 Node v26.8.2 实测原文：`Expected double-quoted property name in JSON at position 3324 (line 164 column 3)`；**措辞随解析器 / V8 版本而异**，承重的是「解析直接失败、并指向第 164 行」这一分类事实）。
   - `~/.continue/config.json` —— 含 `//` 注释与非法内容。
   - `~/.gemini/antigravity/mcp_config.json` —— **0 字节**，必须当 `{}` 处理。
 - **Claude Code 要写两处**：`~/.claude.json` 的连接定义，**加上** `~/.claude/settings.json` 的 `permissions.allow` 必须含字符串 `"mcp__pencil"`（去重），否则工具不生效。
@@ -435,7 +438,7 @@ pages:
 ### 7.3 建立流程
 
 1. **探测项目栈**：按 `pubspec.yaml` / `build.gradle(.kts)` + `AndroidManifest.xml` / `package.json` 判定；命中多个则记为多栈。
-2. **定位设计文件**：优先读 `design-map.yaml`；不存在则询问用户，或用 `get_app_state` + `~/.pencil/.../recent-documents.json` 给出候选（**只读、只作建议，不作判定**）。
+2. **定位设计文件**：优先读 `design-map.yaml`；不存在则询问用户，或用 `get_app_state` + `~/Library/Application Support/Pen/recent-documents.json`（顶层键 `documents`，每条含 `uri` / `openedAt`）给出候选（**只读、只作建议，不作判定**）。
 3. **建立哨兵**：读设计文件顶层节点名，挑选**该项目独有**的 1–3 个作为 `sentinel`。
 4. **提取设计结构**：用 visitor 收集顶层 frame（`context` 属性里的设计说明一并留存）。
 5. **扫描代码页面**：按栈的约定找页面入口。
@@ -607,6 +610,8 @@ Pen.app **单实例**，隔离不能靠多实例。唯一可行路径是 **`file
 | socket 路径生成 | `node_modules/@ha/mcp/dist/mcp-socket-server.js:7-16` |
 | `getAppName()` 硬编码 | `out/desktop-mcp-adapter.js` |
 | 路由三级查找 | `node_modules/@ha/ipc/dist/index.js:759-786` |
+| 请求级路由（工具无关：分派 `request.name` 前按 `payload.filePath` 选连接；读与写共用） | `@ha/mcp/dist/esm/mcp-transport.js` 的 `handleIPCRequest`（调 `@ha/ipc` 的 `getIPC`；§3.2 的失败原文即出自此函数） |
+| `execute` 是写工具且 `filePath` 必填 | `@ha/mcp/dist/cjs/schemas/execute.json`（`required: ["filePath"]`、`destructiveHint: true`） |
 | `lastFocusedResource` 更新 | `out/app.js:586`、`out/app.js:627-629` |
 | DSH 跟随软链 | `dsh-skill-filesystem/lib/index.js:764-772`（`stat` 而非 `lstat`） |
 | DSH 技能名正则 | `@deepseek-ai/dsh-skill/lib/index.js:17` |
