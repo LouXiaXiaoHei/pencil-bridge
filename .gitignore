@@ -1,0 +1,8 @@
+# 本仓库需要把设计文档与实施计划纳入版本控制（要上传 GitHub）。
+# 用户的全局 ~/.gitignore_global 第 10 行有 `superpowers/` 规则，
+# 会连带忽略 docs/superpowers/ 下的全部内容，因此在此显式重新纳入。
+!docs/superpowers/
+!docs/superpowers/specs/
+!docs/superpowers/specs/**
+!docs/superpowers/plans/
+!docs/superpowers/plans/**
