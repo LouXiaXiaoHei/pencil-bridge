@@ -3,7 +3,7 @@
 本文是 pencil-bridge 套装里**唯一**的文档路由参考，也是「**多项目不窜**」的全部依据。来源：spec §3.2（设计规范 ':70-121'）、§10.1（':513-521'）。
 **三探针表、哨兵代码块与失败原文逐字保留，不要改写**（探针 2 的路径已按本套件的「禁止绝对路径引用」守卫改写为占位形态，语义不变 —— 见 §1 表下注）。
 
-四个薄壳（`pencil-init` / `pencil-map` / `pencil-sync` / `pencil-assets`）与 hub `pencil-bridge` 将全部引用本文件的哨兵范式和会话启动检查单（**Task 13 起**四个薄壳才补上 `references/` 引用行；**此刻只有 hub 引用**）。
+四个薄壳（`pencil-init` / `pencil-map` / `pencil-sync` / `pencil-assets`）与 hub `pencil-bridge` 都引用本文件的哨兵范式和会话启动检查单（薄壳的 `references/` 引用行随各自 `SKILL.md` 一并落地）。
 
 ---
 
