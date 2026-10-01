@@ -227,7 +227,7 @@ Print("SENTINEL_COUNT:", out.length);
 │   │       ├── stack-flutter.md
 │   │       ├── stack-kotlin.md
 │   │       └── stack-web.md
-│   ├── pencil-init/SKILL.md                # 薄命令，≈40 行，绝对路径指回主 bundle
+│   ├── pencil-init/SKILL.md                # 薄命令，≈40 行，相对路径指回主 bundle
 │   ├── pencil-map/SKILL.md
 │   ├── pencil-sync/SKILL.md
 │   └── pencil-assets/SKILL.md
@@ -242,7 +242,7 @@ Print("SENTINEL_COUNT:", out.length);
 
 同时，`execute` / `Get` / 变量这套核心 API 知识与坑若被三个命令各维护一份必然漂移（方案 B：三个平行 bundle，已否决）。
 
-→ **唯一物理副本 + 三个薄壳**。薄壳只做三件事：声明触发场景、用**绝对路径**指向主 bundle 的对应 reference、声明该命令的输入输出契约。
+→ **唯一物理副本 + 三个薄壳**。薄壳只做三件事：声明触发场景、用**相对路径**（`../pencil-bridge/references/<file>.md`）指向主 bundle 的对应 reference、声明该命令的输入输出契约。
 
 ### 4.3 扇出机制
 
