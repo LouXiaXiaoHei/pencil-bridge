@@ -231,7 +231,9 @@ IS_HANZI_WRITE_TREE: yes（回退落到了 hanzi_write）
 4. **`assets-extraction.md` 的 `6 × 24/72 = 2` 换算**：仍标「待实证」——`width/height` 已实测（7/7 = `72`/`72`），算术成立，但 7 个样本**同一配置**，要定论需**更多不同尺寸的样本**。
 5. **`init-and-mcp.md` 的写入路径**：按契约（§2.5 报告并停止）本轮从未进入。
 6. **`.pencil-bridge/` 的 git 待遇**：spec 对此留白 ⇒ `yuexiaoshi` / `hanzi_write` 的 `git status` 会新增 `.pencil-bridge/`，属**预期**，不是缺陷。
-7. **栈探测已知缺口（本次验收④顺带实测到，未在本轮改交付物）**：`hanzi_write` 仓库内自带 Flutter SDK 副本 `tools/flutter-sdk-3.47.5/`（已被 `.gitignore:399` 忽略、git 未跟踪），其下含**数十个** `pubspec.yaml` / `build.gradle(.kts)` / `AndroidManifest.xml`；另有 git 跟踪的 `tools/arch_guard/`（含 `pubspec.yaml`）。现有规则只排除**依赖目录**与**产物目录**，**没有**「仓库内自带的工具链 / 第三方 SDK 副本」这一类，也**没有**以 git 跟踪状态为判据 ⇒ 一次朴素递归扫描会在此项目炸出**上百个虚假栈根**。已作为**下一轮候选改进**登记，本轮未改任何交付物。
+7. **栈探测已知缺口（本次验收④顺带实测到）—— 已在后续轮次修复**：`hanzi_write` 仓库内自带 Flutter SDK 副本 `tools/flutter-sdk-3.47.5/`（已被 `.gitignore:399` 忽略、git 未跟踪），其下含 **288** 个 `pubspec.yaml` / `build.gradle(.kts)` / `AndroidManifest.xml`；另有 git 跟踪的 `tools/arch_guard/`（含 `pubspec.yaml`）。现有规则原先只排除**依赖目录**与**产物目录**，**没有**「仓库内自带的工具链 / 第三方 SDK 副本」这一类，也**没有**以 git 跟踪状态为收敛手段 ⇒ 一次朴素递归扫描在此项目命中 **972** 处（`build/` 636、`tools/` 329、`android/` 6、根 `pubspec.yaml` 1）；而按 git 跟踪状态一步即收敛到 **8**，再排除宿主壳 / 依赖 / 产物 / 仓库内自带工具链后得**正确的 1 栈**（对照组 `yuexiaoshi`：**434 → 8 → 2**）。
+   **该缺口已由后续轮次（Task 16）修复**：在 `skills/pencil-map/SKILL.md` 与三份 `skills/pencil-bridge/references/stack-*.md` 的排除清单中补入该类，并把跟踪层写成**有条件采信的收敛手段**（前置条件不满足即退回递归扫描；明禁「跟踪层零命中 ⇒ 本项目没有栈」；必须钉在项目根上跑 `git -C <项目根> ls-files`）。该修复经独立复审（判出 1 个 Important：判据句只在四份文件中的一份出现，另三份只有举例）与修复轮 1 补齐后落地，**提交为 052056c1f5cbf70202815c4faaa990e6b4b46f39**（`fix: 栈探测排除仓库内自带工具链与 .gitignore 忽略目录`）。
+   **数字更正**：本条原先写作「数十个」「上百个」，是按当时粗略观察所记；**实测值为 288 / 972**，在此更正。
 
 ---
 
