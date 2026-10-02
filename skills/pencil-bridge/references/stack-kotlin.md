@@ -23,7 +23,7 @@
 - **⚠️ 探测要钉在项目根上跑 git，并排除自带工具链与忽略目录**：用 git 跟踪状态收敛时必须钉在项目根上跑 `git -C <项目根> ls-files`（等价 `cd <项目根> && git ls-files`），**绝不**裸跑 `git ls-files` —— 它只列**当前目录**下的文件，且输出路径**相对当前目录**。跟踪状态只是**收敛手段、不是判定前提**：不在 git 工作树内（`git rev-parse --is-inside-work-tree` 失败）或 `git ls-files` 结果为空时，退回「递归扫描 + 排除类」；跟踪层给出零命中时**不得**据此判定「本项目没有栈」，零命中只说明这一层不适用。**仓库内自带的工具链 / 第三方源码副本**（如 `tools/<sdk>/`、`vendor/`、`third_party/`）与 **`.gitignore` 忽略目录**同样不参与探测（判据是它是不是本项目的应用代码；忽略目录可用 `git check-ignore -q <目录>` 判定）。
 - 模块结构：`settings.gradle(.kts)` 列模块；模块级构建文件在 `<module>/build.gradle(.kts)`（`app/` 是默认名，但不保证）。资源与源码根是 `<module>/src/main/`。
 - **单仓多栈**：一个仓库可以同时有 `client/` 与 `admin/` 这类多栈根；此时 `design-map.yaml` 用 `stacks` 列表，每条 `{ stack, root }`，各栈分别加载自己那份 reference（见 `../pencil-bridge/references/design-map.md` §2）。
-- `project.root` 是所选 `stacks[].root`；`pages[].code.file` 一律**相对它**写，不要写绝对路径。
+- `stacks[].root` 是**这一栈的栈根**（相对 `project.root` 写）；`project.root` 始终是**项目根**（含 `.git` 的最近祖先；无 `.git` 则回落 cwd，见 `../pencil-bridge/references/design-map.md` §1）。`pages[].code.file` 一律**相对 `project.root`** 写，不要写绝对路径。
 
 ---
 
@@ -51,7 +51,7 @@
 pages:
   - design: { node: "C01 · 首页", id: JiRbS }
     code:
-      file: app/src/main/res/layout/activity_home.xml   # 相对 stacks[].root
+      file: app/src/main/res/layout/activity_home.xml   # 相对 project.root
       selector: "class HomeActivity"
 ```
 

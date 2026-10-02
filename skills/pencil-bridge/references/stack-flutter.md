@@ -16,7 +16,7 @@
 
 - 命中文件：`pubspec.yaml`（`/pencil-map` 的栈判定表用它，见 `../pencil-bridge/references/design-map.md` §3 第 1 步）。
 - **单仓多栈**：一个仓库里可以同时有多个栈根，例如 `client/`（Flutter）与 `admin/`（Web）。此时 `design-map.yaml` 用 `stacks` 列表，每条 `{ stack, root }`，各栈分别加载自己那份 reference。**但本栈的宿主/平台壳目录**（`android/` / `ios/` / `macos/` / `linux/` / `windows/` / `web/`，其中 `android/` 常含 `build.gradle.kts` 与 `AndroidManifest.xml`）**属于本栈，不是独立栈根**——它们只是 Flutter 的构建宿主，**不要**因此再计一个 Kotlin 或 Web 栈；同理**依赖目录**（`node_modules/` / `.dart_tool/` / `Pods/`）与**构建产物目录**（`build/` / `dist/`）一律**不参与探测**（不要扫进去）；另有**仓库内自带的工具链 / 第三方源码副本**（如 `tools/<sdk>/`、`vendor/`、`third_party/`）与 **`.gitignore` 忽略目录**同样不参与探测（判据是它是不是本项目的应用代码；忽略目录可用 `git check-ignore -q <目录>` 判定）。探测时可用 git 跟踪状态收敛，但必须钉在项目根上跑 `git -C <项目根> ls-files`（等价 `cd <项目根> && git ls-files`），**绝不**裸跑 `git ls-files` —— 它只列**当前目录**下的文件，且输出路径**相对当前目录**。跟踪状态只是**收敛手段、不是判定前提**：不在 git 工作树内（`git rev-parse --is-inside-work-tree` 失败）或 `git ls-files` 结果为空时，退回「递归扫描 + 排除类」；跟踪层给出零命中时**不得**据此判定「本项目没有栈」，零命中只说明这一层不适用。
-- 判定要落到**哪一个** `pubspec.yaml`：`project.root` 是含该 `pubspec.yaml` 的目录；页面路径一律**相对它**写。
+- 判定要落到**哪一个** `pubspec.yaml`：该 `pubspec.yaml` 所在目录就是**这一栈的栈根**（写进 `stacks[].root`，**相对 `project.root`**）；`project.root` 始终是**项目根**（含 `.git` 的最近祖先；无 `.git` 则回落 cwd，见 `../pencil-bridge/references/design-map.md` §1），`pages[].code.file` 一律**相对 `project.root`** 写。
 - `pubspec.yaml` 只说明「这是 Flutter/Dart 项目」，不说明页面在哪个目录 —— 页面定位见 §2。
 
 ---
