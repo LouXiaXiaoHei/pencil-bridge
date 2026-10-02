@@ -19,6 +19,8 @@ Web 项目分两型，判据是「**有没有构建器配置** + 页面文件长
 - **构建型**：有 `package.json`，且配 lockfile 与构建器配置之一（`vite.config.*` / `next.config.*` / `nuxt.config.*` / `angular.json` / `webpack.config.*` / `svelte.config.*`）。页面由 `src/` 下的组件编译产出。
 - **纯静态**：没有 `package.json`、没有构建器配置，页面是**散装 `*.html`** —— 例如某纯静态站点目录里就是几个 `*-index.html`，每个文件自成一个页面，样式在页内 `<style>` 块或同目录 `.css` 里。
 - **⚠️ 有 `package.json` 不等于构建型**：仓库根可能同时有 `package.json` 与散装 `*-index.html`（实测：某桌面应用发布目录的 `package.json` 描述的是 Electron 桌面应用，页面仍是几个散装 `*-index.html`）。要再看依赖里有没有 UI 框架 / 构建器，以及页面文件的实际形态。
+- **⚠️ 跨平台框架的平台壳不是 Web 栈**：Flutter / React Native / Expo / Capacitor 的 `android/` / `ios/` / `web/` 目录属于**父栈**，不要因为里面有 `index.html` 就判成「纯静态 Web」。
+- **框架产物目录与依赖目录不参与探测**：`.next/` / `.nuxt/` / `.svelte-kit/` / `.output/` / `build/` / `dist/`，以及 `node_modules/`，一律**不要扫进去**。
 - **单仓多栈**：同一仓库可同时有 `admin/`（构建型 Web）与 `client/`（别的栈）；此时 `design-map.yaml` 用 `stacks` 列表，每条 `{ stack, root }`，各栈分别加载自己那份 reference（见 `../pencil-bridge/references/design-map.md` §2）。
 - `project.root` 是所选 `stacks[].root`；`pages[].code.file` 一律**相对它**写，不要写绝对路径。
 

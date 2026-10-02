@@ -1,7 +1,7 @@
 # assets-extraction —— 四类素材的取法与坑
 
-本文是 pencil-bridge 套装里**唯一**的素材提取参考；`/pencil-assets` 的全部行为都靠它。来源：spec §9（设计规范 ':476-504'，含 §9.1 ':487-490' / §9.2 ':491-496' / §9.3 ':497-504'），位图与矢量的字段细节取自 §3.3 节点模型（':125-147'）。
-**§9 的四类产物表与 §9.1–§9.3 逐字搬入，不要改写；第 3 节的 `strokeWidth` 换算规则是「待实证」，不得当定论用。** 本文里的 `§N` 指**本文的小节**；spec 的章节一律写成 `spec §N`。
+本文是 pencil-bridge 套装里**唯一**的素材提取参考；`/pencil-assets` 的全部行为都靠它。来源：spec §9（设计规范 ':476-504'，含 §9.1 ':487-490' / §9.2 ':491-496' / §9.3 ':497-504'），位图与矢量的字段细节取自 spec §3.3 节点模型（':125-147'）。
+**spec §9 的四类产物表与 spec §9.1–§9.3 逐字搬入，不要改写；第 3 节的 `strokeWidth` 换算规则是「待实证」，不得当定论用。** 本文里的 `§N` 指**本文的小节**；spec 的章节一律写成 `spec §N`。
 
 四类产物（位图 / 矢量 / 图标引用 / 变量 token）各有各的取法，先记住三条边界：
 
@@ -20,7 +20,7 @@
 | **位图** | image fill 的 `url` → 相对 `.pen` 目录解析成绝对路径 → 直接拷磁盘文件 | 不需要 MCP 传字节；保留原扩展名 |
 | **矢量** | `path` 节点 + `includePathGeometry: true` 取 `geometry` / `viewBox` / `fill` / `stroke` / `strokeWidth` / `strokeLinecap` / `strokeLinejoin` | **`includePathGeometry: true`** 决定 `geometry` 是否返回真实路径串（不带时为字面量 `"..."`，静默不报错）；`viewBox` **始终返回**；`strokeWidth` 需按 viewBox 比例换算（**待实证**）；`fill:"#00000000"` → `fill="none"`；`stroke` 是变量引用时的落法见下 |
 | **图标引用** | `icon` 节点的 `library` + `icon` 名 | **取不到 SVG 源码**，只出「用 lucide 的 `book-open`」这类引用；按栈写成对应库的调用 |
-| **变量 token** | `Print(GetVariables())` | 出三栈格式见 §9.2；支持多维 themes |
+| **变量 token** | `Print(GetVariables())` | 出三栈格式见 spec §9.2；支持多维 themes |
 
 四行往下展开：位图的解析见 §2；矢量的字段与坑见 §3，其中变量引用的落法见 §4；三栈 token 格式见 §5；图标引用与两条提取边界见 §6；产物落地见 §7。
 
@@ -28,7 +28,7 @@
 
 ## 2. 位图的路径解析（spec §3.3）
 
-- **没有 `image` 节点类型**。图片是**节点上的 image fill**：`{ type: "image", url, mode: "cover"|"contain"|"stretch" }`。注意 `fill` **是数组字段**，上面是其中**一个元素**的形态；取用时按首元素处理（见 `../pencil-bridge/references/write-safety.md` 的写语义表）。
+- **没有 `image` 节点类型**。图片是**节点上的 image fill**：`{ type: "image", url, mode: "cover"|"contain"|"stretch" }`。注意 `fill` **是数组字段**，上面是其中**一个元素**的形态；**多元素情形的取用规则未实证**（`../pencil-bridge/references/write-safety.md` 的写语义表只规定写侧）。
 - **image fill 的 `url` 是相对 `.pen` 所在目录的磁盘相对路径**，原文件真实存在；`.pen` 内无 base64、无 http 外链。
 - → **位图素材可以直接拷磁盘文件，不需要 MCP 传字节。**
 
@@ -46,7 +46,7 @@
 ## 3. 矢量的字段与坑（spec §3.3）
 
 - **`path` 节点**关键字段：`geometry`（SVG path 串）、`viewBox`（**节点上的显式字段，数组形式如 `[0,0,24,24]`**）、`fillRule`、`fill`、`stroke`、`strokeWidth`、`strokeLinecap`、`strokeLinejoin`。
-- 以下样本取自 `hanzi_write.pen` 的 `E5QUX` 子树（「25 · 图标规范 / 还差 12 枚」），其类型直方图为 `{frame:60, text:18, icon:34, path:7}` —— 即 7 个真矢量 `path`（§14 验收标准第 4 条引用此处）。
+- 以下样本取自 `hanzi_write.pen` 的 `E5QUX` 子树（「25 · 图标规范 / 还差 12 枚」），其类型直方图为 `{frame:60, text:18, icon:34, path:7}` —— 即 7 个真矢量 `path`（spec §14 验收标准第 4 条引用此处）。
 
 三个坑：
 
@@ -107,5 +107,5 @@
 ## 相关 reference
 
 - `../pencil-bridge/references/mcp-toolbox.md` —— `Get` / `Export` 的完整签名、`GetVariables` / `includePathGeometry` 等选项对象、visitor 写法
-- `../pencil-bridge/references/write-safety.md` —— `Generate` 的 asset url 必须在同一个 `execute` 内 `Update` 到 fill（§11 规程 8），以及素材写入相关的安全规程
+- `../pencil-bridge/references/write-safety.md` —— `Generate` 的 asset url 必须在同一个 `execute` 内 `Update` 到 fill（spec §11 规程 8），以及素材写入相关的安全规程
 - `../pencil-bridge/references/document-routing.md` —— `filePath` 必须传绝对 `file://` URI、静默回退与会话启动检查单（素材提取同样受它约束）

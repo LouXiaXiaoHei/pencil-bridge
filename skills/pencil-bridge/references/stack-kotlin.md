@@ -19,6 +19,7 @@
   - `build.gradle.kts` —— Gradle **Kotlin DSL**。
   - **两种都在真实工程里并存**，识别时两个扩展名都要认，不要只写其中一个。
 - `AndroidManifest.xml` 是「这是 Android 模块」的确定标志。只有 `build.gradle(.kts)` 而没有 manifest 的，可能是纯 JVM / Kotlin 项目 —— 那些没有 `res/` 资源目录，Android 资源那一套（§3–§5）不适用。
+- **⚠️ 跨平台框架的 Android 宿主壳不是独立栈**：Flutter / React Native / Expo / Capacitor 工程的 `android/` 目录里确实有 `build.gradle(.kts)` 与 `AndroidManifest.xml`，但它们属于**父栈**（父栈根是含 `pubspec.yaml` 或根 `package.json` 的那一层），**不计入 `stacks`**。判据：该 `android/` 的同级或上级存在父栈清单文件。
 - 模块结构：`settings.gradle(.kts)` 列模块；模块级构建文件在 `<module>/build.gradle(.kts)`（`app/` 是默认名，但不保证）。资源与源码根是 `<module>/src/main/`。
 - **单仓多栈**：一个仓库可以同时有 `client/` 与 `admin/` 这类多栈根；此时 `design-map.yaml` 用 `stacks` 列表，每条 `{ stack, root }`，各栈分别加载自己那份 reference（见 `../pencil-bridge/references/design-map.md` §2）。
 - `project.root` 是所选 `stacks[].root`；`pages[].code.file` 一律**相对它**写，不要写绝对路径。

@@ -38,7 +38,7 @@ feature-first 的 `lib/features/<feature>/…` 与平铺的 `lib/pages/` 同样�
 2. **类名扫描**：`grep -rnE "class [A-Za-z0-9_]*(Page|View|Screen) extends" lib/`（`StatelessWidget` / `StatefulWidget` / `ConsumerWidget` / `GetView` 都算）。**不要只扫 `*Page`** —— 本机样本里（`lib/modules/<feature>/` 布局）的三个页面类里有两个是 `*View`（`GetView` 子类），只扫 `*Page` 会把它们全漏掉。
 3. **目录扫描**：`lib/pages/`、`lib/screens/`、`lib/features/*/presentation/`、`lib/modules/*/` 等，**随项目而异** —— 有的工程把视图直接放在 `lib/modules/<feature>/<name>_view.dart`，只按 `pages` / `screens` 找会一无所获。
 
-**selector 锚点写类名串（`class XxxPage` / `class XxxView` / `class XxxScreen`，后缀随项目而异）** —— 本机样本里 `*Page` 与 `*View` 在真实 Flutter 工程里都大量存在（`AboutPage` / `AccountBindPage` / `SettingsPage` / `LibraryView` / `ReaderView` / …），是稳定可 `grep` 的锚点。**但同名类可能在多处定义** —— 实测 `class AboutPage` 在同一工程的两份 `about_page.dart`（`lib/features/mine/about/about_page.dart` 与 `lib/pages/about/about_page.dart`）里各有一份，所以 `selector` 必须与 `code.file` 成对出现才能唯一定位，单给 `selector` 不足以消歧。`design-map.yaml` 里：
+**selector 锚点写类名串（`class XxxPage` / `class XxxView` / `class XxxScreen`，后缀随项目而异）** —— 本机样本里 `*Page` 与 `*View` 在真实 Flutter 工程里都大量存在（`AboutPage` / `AccountBindPage` / `SettingsPage` / `LibraryView` / `ReaderView` / …），是稳定可 `grep` 的锚点。**但同名类可能在多处定义** —— 本机样本里 `class AboutPage` 在同一工程的两份 `about_page.dart`（`lib/features/mine/about/about_page.dart` 与 `lib/pages/about/about_page.dart`）里各有一份，所以 `selector` 必须与 `code.file` 成对出现才能唯一定位，单给 `selector` 不足以消歧。`design-map.yaml` 里：
 
 ```yaml
 pages:

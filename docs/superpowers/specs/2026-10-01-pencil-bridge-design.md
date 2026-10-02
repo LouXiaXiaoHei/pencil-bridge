@@ -480,7 +480,7 @@ pages:
 | 类别 | 取法 | 关键约束 |
 |---|---|---|
 | **位图** | image fill 的 `url` → 相对 `.pen` 目录解析成绝对路径 → 直接拷磁盘文件 | 不需要 MCP 传字节；保留原扩展名 |
-| **矢量** | `path` 节点 + `includePathGeometry: true` 取 `geometry` / `viewBox` / `fill` / `stroke` / `strokeWidth` / `strokeLinecap` / `strokeLinejoin` | `**includePathGeometry: true`** 决定 `geometry` 是否返回真实路径串（不带时为字面量 `"..."`，静默不报错）；`viewBox` **始终返回**；`strokeWidth` 需按 viewBox 比例换算（**待实证**）；`fill:"#00000000"` → `fill="none"`；`stroke` 是变量引用时的落法见下 |
+| **矢量** | `path` 节点 + `includePathGeometry: true` 取 `geometry` / `viewBox` / `fill` / `stroke` / `strokeWidth` / `strokeLinecap` / `strokeLinejoin` | **`includePathGeometry: true`** 决定 `geometry` 是否返回真实路径串（不带时为字面量 `"..."`，静默不报错）；`viewBox` **始终返回**；`strokeWidth` 需按 viewBox 比例换算（**待实证**）；`fill:"#00000000"` → `fill="none"`；`stroke` 是变量引用时的落法见下 |
 | **图标引用** | `icon` 节点的 `library` + `icon` 名 | **取不到 SVG 源码**，只出「用 lucide 的 `book-open`」这类引用；按栈写成对应库的调用 |
 | **变量 token** | `Print(GetVariables())` | 出三栈格式见 §9.2；支持多维 themes |
 
