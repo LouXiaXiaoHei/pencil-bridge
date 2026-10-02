@@ -235,6 +235,8 @@ IS_HANZI_WRITE_TREE: yes（回退落到了 hanzi_write）
    **该缺口已由后续轮次（Task 16）修复**：在 `skills/pencil-map/SKILL.md` 与三份 `skills/pencil-bridge/references/stack-*.md` 的排除清单中补入该类，并把跟踪层写成**有条件采信的收敛手段**（前置条件不满足即退回递归扫描；明禁「跟踪层零命中 ⇒ 本项目没有栈」；必须钉在项目根上跑 `git -C <项目根> ls-files`）。该修复经独立复审（判出 1 个 Important：判据句只在四份文件中的一份出现，另三份只有举例）与修复轮 1 补齐后落地，**提交为 052056c1f5cbf70202815c4faaa990e6b4b46f39**（`fix: 栈探测排除仓库内自带工具链与 .gitignore 忽略目录`）。
    **数字更正**：本条原先写作「数十个」「上百个」，是按当时粗略观察所记；**实测值为 288 / 972**，在此更正。
 
+8. **`project.root` / `code.file` 相对基准的表述缺陷 —— 已在后续轮次修复**：三份 `skills/pencil-bridge/references/stack-*.md` 原先把 `project.root` 说成「所选 `stacks[].root`」、把 `pages[].code.file` 说成相对**栈根**，与本记录 §2.1 早已声明的口径（`code.file` 一律相对 `project.root` 书写）、`design-map.md:18`/`:47`、以及验收①的**实际落盘产物**三处矛盾 —— 产物里 `project.root` 是绝对路径、`stacks[].root` 是 `client/` / `admin/` 相对值，而 `code.file` 写作 `client/lib/...` / `admin/app/...`（**带栈根前缀**）⇒ 若基准是 `stacks[].root`，值就不该带前缀。**即本记录在这一点上一直是对的，离群的是交付物本身。** 该缺陷已由 **Task 17** 修复（4 处就地替换、行数不变 `133/129/133`），**提交为 `c1a5ff6587713f51be174ab43d234b78c041cd6d`**（`fix: 修正三份分栈文件的 project.root / code.file 相对基准`），经范围限定复审判 `Critical 0 / Important 0 / Minor 0 / Nit 0`。
+
 ---
 
 ## 4. 相关产物与位置
