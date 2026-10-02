@@ -21,6 +21,7 @@ Web 项目分两型，判据是「**有没有构建器配置** + 页面文件长
 - **⚠️ 有 `package.json` 不等于构建型**：仓库根可能同时有 `package.json` 与散装 `*-index.html`（实测：某桌面应用发布目录的 `package.json` 描述的是 Electron 桌面应用，页面仍是几个散装 `*-index.html`）。要再看依赖里有没有 UI 框架 / 构建器，以及页面文件的实际形态。
 - **⚠️ 跨平台框架的平台壳不是 Web 栈**：Flutter / React Native / Expo / Capacitor 的 `android/` / `ios/` / `web/` 目录属于**父栈**，不要因为里面有 `index.html` 就判成「纯静态 Web」。
 - **框架产物目录与依赖目录不参与探测**：`.next/` / `.nuxt/` / `.svelte-kit/` / `.output/` / `build/` / `dist/`，以及 `node_modules/`，一律**不要扫进去**。
+- **⚠️ 探测要钉在项目根上跑 git，并排除自带工具链与忽略目录**：用 git 跟踪状态收敛时必须钉在项目根上跑 `git -C <项目根> ls-files`（等价 `cd <项目根> && git ls-files`），**绝不**裸跑 `git ls-files` —— 它只列**当前目录**下的文件，且输出路径**相对当前目录**。跟踪状态只是**收敛手段、不是判定前提**：不在 git 工作树内（`git rev-parse --is-inside-work-tree` 失败）或 `git ls-files` 结果为空时，退回「递归扫描 + 排除类」；跟踪层给出零命中时**不得**据此判定「本项目没有栈」，零命中只说明这一层不适用。**仓库内自带的工具链 / 第三方源码副本**（如 `tools/<sdk>/`、`vendor/`、`third_party/`）与 **`.gitignore` 忽略目录**同样不参与探测（判据是它是不是本项目的应用代码；忽略目录可用 `git check-ignore -q <目录>` 判定）。
 - **单仓多栈**：同一仓库可同时有 `admin/`（构建型 Web）与 `client/`（别的栈）；此时 `design-map.yaml` 用 `stacks` 列表，每条 `{ stack, root }`，各栈分别加载自己那份 reference（见 `../pencil-bridge/references/design-map.md` §2）。
 - `project.root` 是所选 `stacks[].root`；`pages[].code.file` 一律**相对它**写，不要写绝对路径。
 
