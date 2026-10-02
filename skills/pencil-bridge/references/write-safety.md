@@ -1,6 +1,6 @@
 # write-safety —— 反写安全规程、写操作语义与凭据禁读
 
-本文是 pencil-bridge 套装里**唯一**的写安全参考；`/pencil-sync` 的反向（写回设计稿）模式**必须逐条执行**它。来源：spec §11（设计规范 ':525-539'）、§3.5（':157-172'）、§3.4（':148-155'）、§3.7（':187-209'），以及写 API 手册第 8 节 `docs/reference/pencil-write-api-manual.md`（':390-426'）。
+本文是 pencil-bridge 套装里**唯一**的写安全参考；`/pencil-sync` 的反向（写回设计稿）模式**必须逐条执行**它。来源：spec §11（设计规范 ':525-539'）、§3.5（':157-172'）、§3.4（':148-155'）、§3.7（':187-209'），以及写 API 手册第 8 节 `docs/reference/pencil-write-api-manual.md`（':390-446'）。
 **§11 的 12 条规程与 §3.7 的凭据清单逐字保留，不要改写。**
 
 ---
@@ -63,23 +63,16 @@
 - **一次 `execute` 可以写任意多个节点**（循环 / 数组 / `for...of`），原子性仍然成立；但按规程 2，**不要因此把多个逻辑单元塞进一次调用** —— 粒度越细越容易恢复。
 - **跨 `execute` 不共享局部变量**：每次 `execute` 是独立作用域，`const` / `let` 声明的局部变量与 helper 不跨调用；需要在调用间保留值，只能靠**不带声明的赋值**（`myNodeId = Insert(...)`）—— 但全局赋值也**同样在失败时被一起回滚**。
 
-### 4.1 失败后的 `editId` 修补流程（确切用法）
+### 4.1 失败后的 `editId` 修补流程（结论）
 
-失败**不要重发整段**，用失败消息里的 `editId` + `edits: [{find, replace}]` 打补丁重跑。`[文档]` 逐字：
+失败**不要重发整段**，用失败消息里的 `editId` + `edits: [{find, replace}]` 打补丁重跑。
 
-> "When an `execute` call fails, ALWAYS fix it with the `edits` parameter and the `editId` from the failure message - never resend the snippet. If the patched snippet fails again, keep fixing it with further `edits` under the same `editId`; `find` must then match the snippet as already patched."
+- `edits` 必须是 `{find, replace}` 对象的**数组**；每项 `find` 为非空 string、`replace` 为 string。
+- 用 `edits` **必须同时给** `editId`；`input` 与 `edits` **不能同时给**。
+- 修补后 snippet **从头重跑**（不是增量执行）；**未命中时原 snippet 未被改动**。
+- `edits` 的 `all: true` 语义为替换全部匹配（默认要求唯一匹配）。
 
-参数校验规则（`[代码交叉验证]` 错误原文）：
-
-- `edits` 必须是 `{find, replace}` 对象的数组；每项 `find` 为非空 string、`replace` 为 string：
-  - `` "`edits` must be an array of `{ find, replace }` objects. Send the `edits` that patch the failed snippet, or resend the full corrected snippet in `input`." ``
-  - `` `edits[${s}] must be an object with a non-empty \`find\` string and a \`replace\` string!` ``
-- 用 `edits` 必须同时给 `editId`；两者缺一都报错：
-  - `` "`editId` requires `edits`. ..." `` / `` "`editId` is required when using `edits`. Pass the editId printed in the failure message." ``
-- `input` 与 `edits` **不能同时给**：`"Provide either `input` or `edits`, not both. Use `edits` alone to patch and re-run a failed call."`
-- `edits` 不能作为 partial 调用：`` "`edits` cannot be sent as a partial call. Send the complete `edits` array in a single non-partial `execute` call." ``
-- 未命中时提示：`"- The failed snippet \"…\" was NOT modified. Fix the `edits` so each `find` matches its content exactly and call `execute` again with the same `editId`, or resend the full corrected snippet in `input`."`
-- 修补后 snippet **从头重跑**（不是增量执行）；未命中时原 snippet **未被改动**。`edits` 的 `all: true` 语义为替换全部匹配（默认要求唯一匹配）。
+**逐字文档原文与全部参数校验错误串见 `docs/reference/pencil-write-api-manual.md` §8.3（':403-419'）；`editId` 修补的调用语义见 `../pencil-bridge/references/mcp-toolbox.md` §2** —— 本文件不重复抄写，避免两处漂移。
 
 ---
 

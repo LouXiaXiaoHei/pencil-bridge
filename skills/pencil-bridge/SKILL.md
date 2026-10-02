@@ -37,7 +37,7 @@ metadata:
 
 ## 栈探测
 
-在需要栈相关约定时（`/pencil-map` 建映射、`/pencil-assets` 出 token），按文件判定：
+在需要栈相关约定时（`/pencil-map` 建映射、`/pencil-sync` 反向改样式、`/pencil-assets` 出 token），按文件判定：
 
 | 命中文件 | 栈 | 加载 |
 |---|---|---|

@@ -1,7 +1,7 @@
 # assets-extraction —— 四类素材的取法与坑
 
 本文是 pencil-bridge 套装里**唯一**的素材提取参考；`/pencil-assets` 的全部行为都靠它。来源：spec §9（设计规范 ':476-504'，含 §9.1 ':487-490' / §9.2 ':491-496' / §9.3 ':497-504'），位图与矢量的字段细节取自 §3.3 节点模型（':125-147'）。
-**§9 的四类产物表与 §9.1–§9.3 逐字搬入，不要改写；第 3 节的 `strokeWidth` 换算规则是「待实证」，不得当定论用。** 本文里的 `§N` 均指 spec 的章节号。
+**§9 的四类产物表与 §9.1–§9.3 逐字搬入，不要改写；第 3 节的 `strokeWidth` 换算规则是「待实证」，不得当定论用。** 本文里的 `§N` 指**本文的小节**；spec 的章节一律写成 `spec §N`。
 
 四类产物（位图 / 矢量 / 图标引用 / 变量 token）各有各的取法，先记住三条边界：
 
@@ -18,7 +18,7 @@
 | 类别 | 取法 | 关键约束 |
 |---|---|---|
 | **位图** | image fill 的 `url` → 相对 `.pen` 目录解析成绝对路径 → 直接拷磁盘文件 | 不需要 MCP 传字节；保留原扩展名 |
-| **矢量** | `path` 节点 + `includePathGeometry: true` 取 `geometry` / `viewBox` / `fill` / `stroke` / `strokeWidth` / `strokeLinecap` / `strokeLinejoin` | `viewBox` 只有带该 option 时才返回；`strokeWidth` 需按 viewBox 比例换算（**待实证**）；`fill:"#00000000"` → `fill="none"`；`stroke` 是变量引用时的落法见下 |
+| **矢量** | `path` 节点 + `includePathGeometry: true` 取 `geometry` / `viewBox` / `fill` / `stroke` / `strokeWidth` / `strokeLinecap` / `strokeLinejoin` | **`includePathGeometry: true`** 决定 `geometry` 是否返回真实路径串（不带时为字面量 `"..."`，静默不报错）；`viewBox` **始终返回**；`strokeWidth` 需按 viewBox 比例换算（**待实证**）；`fill:"#00000000"` → `fill="none"`；`stroke` 是变量引用时的落法见下 |
 | **图标引用** | `icon` 节点的 `library` + `icon` 名 | **取不到 SVG 源码**，只出「用 lucide 的 `book-open`」这类引用；按栈写成对应库的调用 |
 | **变量 token** | `Print(GetVariables())` | 出三栈格式见 §9.2；支持多维 themes |
 
@@ -28,7 +28,7 @@
 
 ## 2. 位图的路径解析（spec §3.3）
 
-- **没有 `image` 节点类型**。图片是**节点上的 image fill**：`{ type: "image", url, mode: "cover"|"contain"|"stretch" }`。
+- **没有 `image` 节点类型**。图片是**节点上的 image fill**：`{ type: "image", url, mode: "cover"|"contain"|"stretch" }`。注意 `fill` **是数组字段**，上面是其中**一个元素**的形态；取用时按首元素处理（见 `../pencil-bridge/references/write-safety.md` 的写语义表）。
 - **image fill 的 `url` 是相对 `.pen` 所在目录的磁盘相对路径**，原文件真实存在；`.pen` 内无 base64、无 http 外链。
 - → **位图素材可以直接拷磁盘文件，不需要 MCP 传字节。**
 
@@ -50,8 +50,8 @@
 
 三个坑：
 
-1. **`viewBox` 只在 `includePathGeometry: true` 时随 `geometry` 一起返回**（此前的「由 width/height 推导」是错的）。
-   不带这个 option，就不要指望拿到 `viewBox`。
+1. **`includePathGeometry: true` 决定 `geometry` 是否返回真实路径串**（此前的「由 width/height 推导」是错的）。**不带这个 option（或传 `false`）时，`geometry` 仍然会返回，但内容是字面量 `"..."`** —— **静默、不报错**，极易被当成路径串写出坏 SVG。
+   **`viewBox` 与该 option 无关，三档都返回**（实测恒为 `[0,0,24,24]`）。
 2. `fill: "#00000000"` 是**全透明**，导出时应落成 `fill="none"`。
    不要原样写进 SVG，那会变成不透明黑而不是「无填充」。
 3. **`strokeWidth` 是节点像素坐标下的值**，不能直接写进 viewBox 坐标系。实测样本 `width:72, height:72, viewBox:[0,0,24,24], strokeWidth:6`；按 `6 × 24/72 = 2` 换算恰好是 lucide 标准描边。**此换算规则标为待实证，不得当定论写进实现。**
@@ -100,7 +100,7 @@
 - **摘要里列出每个文件的来源节点 id** —— 让用户能对上「这份素材来自画布上哪个节点」。
 - 位图按 §2 拷贝，矢量按 §3 导出，token 按 §5 的三栈格式写出。
 
-`Export` 的签名与选项对象在 `../pencil-bridge/references/mcp-toolbox.md`；素材写入要遵守的 `Generate` asset url 规程在 `../pencil-bridge/references/write-safety.md`（§11 规程 8）。
+`Export` 的签名与选项对象在 `../pencil-bridge/references/mcp-toolbox.md`；素材写入要遵守的 `Generate` asset url 规程在 `../pencil-bridge/references/write-safety.md`（spec §11 规程 8）。
 
 ---
 
@@ -108,3 +108,4 @@
 
 - `../pencil-bridge/references/mcp-toolbox.md` —— `Get` / `Export` 的完整签名、`GetVariables` / `includePathGeometry` 等选项对象、visitor 写法
 - `../pencil-bridge/references/write-safety.md` —— `Generate` 的 asset url 必须在同一个 `execute` 内 `Update` 到 fill（§11 规程 8），以及素材写入相关的安全规程
+- `../pencil-bridge/references/document-routing.md` —— `filePath` 必须传绝对 `file://` URI、静默回退与会话启动检查单（素材提取同样受它约束）

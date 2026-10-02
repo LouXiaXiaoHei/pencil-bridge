@@ -26,15 +26,19 @@ metadata:
 
 建立与更新流程**逐条**执行 `../pencil-bridge/references/design-map.md` §3「建立流程八步」与 §4「重跑语义」；本命令不复述这两节，避免两处漂移。
 
+进命令先按 `../pencil-bridge/references/document-routing.md` §7 跑**会话启动检查单**与哨兵校验（`pencil-sync` / `pencil-assets` 同样要求）。
+
 其中与本命令强绑定的三个决策点（其余细节见上述两节）：
 
-1. 栈探测命中多个时**记为多栈**，并加载对应的多份分栈 reference。
+1. 栈探测命中多个时**记为多栈**，并加载对应的多份分栈 reference。但**栈的宿主/平台壳目录**（Flutter 的 `android/` / `ios/` / `macos/` / `linux/` / `windows/` / `web/`）属于其父栈，**不计入 `stacks`**；**依赖目录**（`node_modules/` / `.dart_tool/` / `Pods/`）与**构建产物目录**（`build/` / `dist/`）一律**不参与探测**（不要扫进去）。
 2. 候选配对表**必须经用户确认后才写文件**。
 3. 两种模式都要支持：导入既有清单（作为导入源读取，不取代它），或用户**主动输入节点名与页面名**逐条建映射。
 
 ## 输出契约
 
 `<projectRoot>/.pencil-bridge/design-map.yaml`（项目根 = 含 `.git` 的最近祖先；无 `.git` 则回落 cwd）。写完后给出：写入路径 + 本次新增 / 更新的条目摘要 + 仍待确认的候选。
+
+**本设计不规定 `.pencil-bridge/` 的 git 待遇**（spec 对此留白）：建议把 `design-map.yaml` 纳入版本控制共享，`backups/` 与 `assets/` 按需忽略。
 
 ## 铁律
 

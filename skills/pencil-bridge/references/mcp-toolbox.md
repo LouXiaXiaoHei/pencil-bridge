@@ -51,7 +51,7 @@ Export(nodeIds, "png"|"jpeg"|"webp"|"pdf"|"html-tailwind"|"html-css", outputPath
 
 选项对象：
 
-- `GetOptions`：`depth` / `resolveVariables` / `resolveInstances` / `includePathGeometry`
+- `GetOptions`：`depth` / `resolveVariables` / `resolveInstances` / `includePathGeometry`（默认 **false**；为 false 时 `geometry` 返回字面量 `"..."` 占位而不是真实路径串）
 - `ExportOptions`：`scale`（默认 2）/ `quality` / `includeHtmlScaffold` / `includeLayerNames` / `includeLayerIds`
 
 两条硬性行为约束（**逐字**）：
@@ -119,6 +119,8 @@ Print(GetVariables());
 > "Targets - `path` and `Insert`'s `parent` - are always id/path strings: never pass a node object; when holding a node from `Get`, pass its `.id`. Returned ids concatenate directly: `cardId + \"/childId\"`"
 
 不确定 id 时，用 visitor 按 name 精确定位再更新，例如：`Get(n => n.name === "Primary Button" && Update(n.id, {...}))`。
+
+`path` 必须是**字符串 id**；传节点对象**不会**限定范围，会静默退化成**全文档遍历且不报错**（子树数字与全文档数字差异极大，极易误读）。
 
 ---
 

@@ -137,7 +137,7 @@ Print("SENTINEL_COUNT:", out.length);
   - `{resolveInstances:true}` 时子节点 id 形如 `instanceId/childId`。
 - **`path` 节点**关键字段：`geometry`（SVG path 串）、`viewBox`（**节点上的显式字段，数组形式如 `[0,0,24,24]`**）、`fillRule`、`fill`、`stroke`、`strokeWidth`、`strokeLinecap`、`strokeLinejoin`。
   - 以下样本取自 `hanzi_write.pen` 的 `E5QUX` 子树（「25 · 图标规范 / 还差 12 枚」），其类型直方图为 `{frame:60, text:18, icon:34, path:7}` —— 即 7 个真矢量 `path`（§14 验收标准第 4 条引用此处）。
-  - **`viewBox` 只在 `includePathGeometry: true` 时随 `geometry` 一起返回**（此前的「由 width/height 推导」是错的）。
+  - **`includePathGeometry: true` 决定 `geometry` 是否返回真实路径串**（此前的「由 width/height 推导」是错的）；不带该 option（或传 `false`）时 `geometry` 仍返回，但内容是**字面量 `"..."`**，且**静默不报错**。**`viewBox` 与该 option 无关，始终返回。**
   - `fill: "#00000000"` 是**全透明**，导出时应落成 `fill="none"`。
   - **`strokeWidth` 是节点像素坐标下的值**，不能直接写进 viewBox 坐标系。实测样本 `width:72, height:72, viewBox:[0,0,24,24], strokeWidth:6`；按 `6 × 24/72 = 2` 换算恰好是 lucide 标准描边。**此换算规则标为待实证，不得当定论写进实现。**
 - **`icon` 节点**只有：`library`（lucide | feather | Material Symbols Outlined/Rounded/Sharp | phosphor）、`icon`（名字）、`weight`、`fill`。**没有 geometry、没有 SVG 源码。**
@@ -437,7 +437,7 @@ pages:
 
 ### 7.3 建立流程
 
-1. **探测项目栈**：按 `pubspec.yaml` / `build.gradle(.kts)` + `AndroidManifest.xml` / `package.json` 判定；命中多个则记为多栈。
+1. **探测项目栈**：按 `pubspec.yaml` / `build.gradle(.kts)` + `AndroidManifest.xml` / `package.json` 判定；命中多个则记为多栈。**但某栈的宿主/平台壳目录**（如 Flutter 的 `android/` / `ios/` / `web/`）**属于其父栈，不计入 `stacks`**；**依赖目录**（`node_modules/` / `.dart_tool/` / `Pods/`）与**构建产物目录**（`build/` / `dist/`）**一律不参与探测。**
 2. **定位设计文件**：优先读 `design-map.yaml`；不存在则询问用户，或用 `get_app_state` + `~/Library/Application Support/Pen/recent-documents.json`（顶层键 `documents`，每条含 `uri` / `openedAt`）给出候选（**只读、只作建议，不作判定**）。
 3. **建立哨兵**：读设计文件顶层节点名，挑选**该项目独有**的 1–3 个作为 `sentinel`。
 4. **提取设计结构**：用 visitor 收集顶层 frame（`context` 属性里的设计说明一并留存）。
@@ -480,7 +480,7 @@ pages:
 | 类别 | 取法 | 关键约束 |
 |---|---|---|
 | **位图** | image fill 的 `url` → 相对 `.pen` 目录解析成绝对路径 → 直接拷磁盘文件 | 不需要 MCP 传字节；保留原扩展名 |
-| **矢量** | `path` 节点 + `includePathGeometry: true` 取 `geometry` / `viewBox` / `fill` / `stroke` / `strokeWidth` / `strokeLinecap` / `strokeLinejoin` | `viewBox` 只有带该 option 时才返回；`strokeWidth` 需按 viewBox 比例换算（**待实证**）；`fill:"#00000000"` → `fill="none"`；`stroke` 是变量引用时的落法见下 |
+| **矢量** | `path` 节点 + `includePathGeometry: true` 取 `geometry` / `viewBox` / `fill` / `stroke` / `strokeWidth` / `strokeLinecap` / `strokeLinejoin` | `**includePathGeometry: true`** 决定 `geometry` 是否返回真实路径串（不带时为字面量 `"..."`，静默不报错）；`viewBox` **始终返回**；`strokeWidth` 需按 viewBox 比例换算（**待实证**）；`fill:"#00000000"` → `fill="none"`；`stroke` 是变量引用时的落法见下 |
 | **图标引用** | `icon` 节点的 `library` + `icon` 名 | **取不到 SVG 源码**，只出「用 lucide 的 `book-open`」这类引用；按栈写成对应库的调用 |
 | **变量 token** | `Print(GetVariables())` | 出三栈格式见 §9.2；支持多维 themes |
 

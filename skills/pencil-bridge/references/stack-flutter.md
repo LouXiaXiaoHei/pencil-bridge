@@ -15,7 +15,7 @@
 ## 1. 项目识别
 
 - 命中文件：`pubspec.yaml`（`/pencil-map` 的栈判定表用它，见 `../pencil-bridge/references/design-map.md` §3 第 1 步）。
-- **单仓多栈**：一个仓库里可以同时有多个栈根，例如 `client/`（Flutter）与 `admin/`（Web）。此时 `design-map.yaml` 用 `stacks` 列表，每条 `{ stack, root }`，各栈分别加载自己那份 reference。
+- **单仓多栈**：一个仓库里可以同时有多个栈根，例如 `client/`（Flutter）与 `admin/`（Web）。此时 `design-map.yaml` 用 `stacks` 列表，每条 `{ stack, root }`，各栈分别加载自己那份 reference。**但本栈的宿主/平台壳目录**（`android/` / `ios/` / `macos/` / `linux/` / `windows/` / `web/`，其中 `android/` 常含 `build.gradle.kts` 与 `AndroidManifest.xml`）**属于本栈，不是独立栈根**——它们只是 Flutter 的构建宿主，**不要**因此再计一个 Kotlin 或 Web 栈；同理**依赖目录**（`node_modules/` / `.dart_tool/` / `Pods/`）与**构建产物目录**（`build/` / `dist/`）一律**不参与探测**（不要扫进去）。
 - 判定要落到**哪一个** `pubspec.yaml`：`project.root` 是含该 `pubspec.yaml` 的目录；页面路径一律**相对它**写。
 - `pubspec.yaml` 只说明「这是 Flutter/Dart 项目」，不说明页面在哪个目录 —— 页面定位见 §2。
 
@@ -23,7 +23,7 @@
 
 ## 2. 页面定位约定（与 `pages[].code.selector` 对应）
 
-**页面目录是项目自定的，`lib/pages/` 只是其中一种。** 实测两个真实工程：
+**页面目录是项目自定的，`lib/pages/` 只是其中一种。** 本机两个样本工程的形态各不相同：
 
 - 一个（feature-first）的 `lib/` 是 `app` / `components` / `config` / `constants` / `controllers` / `core` / `design_system` / `domain` / `engines` / `features` / …；
 - 另一个的 `lib/` 是 `bean` / `common` / `components` / `index` / `launch` / `model` / `personal` / …。
@@ -35,10 +35,10 @@ feature-first 的 `lib/features/<feature>/…` 与平铺的 `lib/pages/` 同样�
 定位手法（按可靠度排序）：
 
 1. **路由表（若项目有）**：入口文件（如 `main.dart` / `app.dart` 或 `lib/routes/` 等独立路由文件）里 `routes` / `onGenerateRoute` / `getPages`（GetX，键是 `GetPage.name`）/ GoRouter 的 `path` 的键 → 页面 widget 名；**有路由表也要用手法 2 补齐未登记路由的页面；没有路由表就直接转手法 2**。
-2. **类名扫描**：`grep -rnE "class [A-Za-z0-9_]*(Page|View|Screen) extends" lib/`（`StatelessWidget` / `StatefulWidget` / `ConsumerWidget` / `GetView` 都算）。**不要只扫 `*Page`** —— 实测某工程（`lib/modules/<feature>/` 布局）的三个页面类里有两个是 `*View`（`GetView` 子类），只扫 `*Page` 会把它们全漏掉。
+2. **类名扫描**：`grep -rnE "class [A-Za-z0-9_]*(Page|View|Screen) extends" lib/`（`StatelessWidget` / `StatefulWidget` / `ConsumerWidget` / `GetView` 都算）。**不要只扫 `*Page`** —— 本机样本里（`lib/modules/<feature>/` 布局）的三个页面类里有两个是 `*View`（`GetView` 子类），只扫 `*Page` 会把它们全漏掉。
 3. **目录扫描**：`lib/pages/`、`lib/screens/`、`lib/features/*/presentation/`、`lib/modules/*/` 等，**随项目而异** —— 有的工程把视图直接放在 `lib/modules/<feature>/<name>_view.dart`，只按 `pages` / `screens` 找会一无所获。
 
-**selector 锚点写类名串（`class XxxPage` / `class XxxView` / `class XxxScreen`，后缀随项目而异）** —— 实测 `*Page` 与 `*View` 在真实 Flutter 工程里都大量存在（`AboutPage` / `AccountBindPage` / `SettingsPage` / `LibraryView` / `ReaderView` / …），是稳定可 `grep` 的锚点。**但同名类可能在多处定义** —— 实测 `class AboutPage` 在同一工程的两份 `about_page.dart`（`lib/features/mine/about/about_page.dart` 与 `lib/pages/about/about_page.dart`）里各有一份，所以 `selector` 必须与 `code.file` 成对出现才能唯一定位，单给 `selector` 不足以消歧。`design-map.yaml` 里：
+**selector 锚点写类名串（`class XxxPage` / `class XxxView` / `class XxxScreen`，后缀随项目而异）** —— 本机样本里 `*Page` 与 `*View` 在真实 Flutter 工程里都大量存在（`AboutPage` / `AccountBindPage` / `SettingsPage` / `LibraryView` / `ReaderView` / …），是稳定可 `grep` 的锚点。**但同名类可能在多处定义** —— 实测 `class AboutPage` 在同一工程的两份 `about_page.dart`（`lib/features/mine/about/about_page.dart` 与 `lib/pages/about/about_page.dart`）里各有一份，所以 `selector` 必须与 `code.file` 成对出现才能唯一定位，单给 `selector` 不足以消歧。`design-map.yaml` 里：
 
 ```yaml
 pages:

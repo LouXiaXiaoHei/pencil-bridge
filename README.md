@@ -42,4 +42,4 @@ git clone <repo-url> ~/Project/pencil-bridge
 
 - **默认只读**：`/pencil-init` 是只读诊断，任何写入之前必须先询问用户。
 - **反写有补偿备份**：`.pen` 不受版本控制兜底（`*.pen` 在全局 gitignore 里），所以反向同步（代码 → 设计稿）在写入前必须自建补偿备份。
-- **不读凭据文件**：任何流程都显式跳过 `~/.pencil/session-desktop.json`、`~/.pencil/agent-auth`、`~/.dsh/.credentials.yaml`、`~/.claude/.credentials.json` 等凭据文件，且绝不写进日志或产物。
+- **不读凭据文件**：任何流程都显式跳过 `~/.pencil/session-desktop.json`、`~/.pencil/agent-auth`、`~/.dsh/.credentials.yaml`、`~/.claude/.credentials.json` 等凭据文件，且绝不写进日志或产物。完整的七条禁读清单见 `skills/pencil-bridge/references/write-safety.md` 的凭据禁读一节。
