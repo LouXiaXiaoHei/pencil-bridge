@@ -124,4 +124,4 @@ Re-run `bin/check` after editing skills; if you changed anything under `skills/`
 
 ## License
 
-Released under the **MIT License** — see [LICENSE](LICENSE). Copyright © 2026 eatmoreduck.
+Released under the **MIT License** — see [LICENSE](LICENSE). Copyright © 2026 LouXiaXiaoHei.

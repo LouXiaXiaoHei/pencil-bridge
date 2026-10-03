@@ -124,4 +124,4 @@ tests/link.test.sh        # bin/link 的测试（隔离 HOME，不碰真实技�
 
 ## 许可
 
-以 **MIT 许可证**发布，全文见 [LICENSE](LICENSE)。版权所有 © 2026 eatmoreduck。
+以 **MIT 许可证**发布，全文见 [LICENSE](LICENSE)。版权所有 © 2026 LouXiaXiaoHei。
