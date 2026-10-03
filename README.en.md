@@ -124,4 +124,4 @@ Re-run `bin/check` after editing skills; if you changed anything under `skills/`
 
 ## License
 
-No license file yet. Until one is added, all rights are reserved by default.
+Released under the **MIT License** — see [LICENSE](LICENSE). Copyright © 2026 eatmoreduck.
